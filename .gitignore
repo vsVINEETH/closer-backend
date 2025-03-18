@@ -1,0 +1,9 @@
+# Dependency directories
+node_modules/
+dist/
+
+# Logs
+logs/
+
+# Environment files
+.env

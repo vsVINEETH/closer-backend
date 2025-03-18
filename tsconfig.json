@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "typeRoots": [
+      "./node_modules/@types",
+      "types"
+    ],
+    "outDir": "./dist",
+    "rootDir": "./src", 
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
+  },
+  "include": ["src","types"]
+}
