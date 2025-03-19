@@ -49,6 +49,7 @@ export class UserContentController {
       try {
         const { blogId, voteType} = req.body;
         const userId = req.body.id;
+
         const result = await this.contentUseCase.voteContent(userId, blogId, voteType);
     
         if(result){

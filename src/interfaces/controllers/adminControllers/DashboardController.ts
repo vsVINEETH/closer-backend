@@ -43,7 +43,7 @@ export class DashboardController {
         this.userMgntUseCase = new UserManagement(userRepository);
         this.empMgntUseCase = new EmployeeManagement(employeeRepository, bcrypt, mailer);
         this.eventUseCase = new EventManagement(eventRepository, mailer, userRepository, razorpay, salesRepository, s3ClientAccessControll);
-        this.salesUseCase = new SalesManagement(salesRepository);
+        this.salesUseCase = new SalesManagement(salesRepository, s3ClientAccessControll);
     };
 
 

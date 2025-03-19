@@ -134,7 +134,8 @@ export class SignupUser {
                         username: user.username,
                         image: user.image,
                         email: user.email,
-                        setupCompleted: user.setupCompleted
+                        setupCompleted: user.setupCompleted,
+                        prime: user.prime,
                     },
                     tokens: tokens
                 }

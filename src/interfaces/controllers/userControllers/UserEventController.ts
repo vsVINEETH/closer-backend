@@ -29,7 +29,7 @@ export class UserEventController {
         const salesRepository = new SalesRepository();
         const s3ClientAccessControll = new S3ClientAccessControll()
         this.eventUseCase = new EventManagement(eventRepository, mailer, userRepository,razorpay,salesRepository,s3ClientAccessControll);
-        this.salesUseCase = new SalesManagement(salesRepository);
+        this.salesUseCase = new SalesManagement(salesRepository, s3ClientAccessControll);
     };
 
     fetchEvent = async (req: Request, res: Response, next: NextFunction) => {

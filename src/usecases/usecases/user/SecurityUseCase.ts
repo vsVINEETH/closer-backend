@@ -5,12 +5,14 @@ import { IOtp } from "../../interfaces/IOtp";
 import { IMailer } from "../../interfaces/IMailer";
 import { Preferences} from "../../../../types/express";
 import { tempUserStore } from "../../dtos/CommonDTO";
+import { IS3Client } from "../../interfaces/IS3Client";
 export class Security {
     constructor(
         private userRepository: IUserRepository,
         private bcrypt: IBcrypt,
         private OTP: IOtp,
-        private mailer: IMailer
+        private mailer: IMailer,
+        private s3: IS3Client,
     ){}
 
     otpExpireation(email: string){
@@ -92,8 +94,19 @@ export class Security {
             const user = await this.userRepository.findById(userId);
             if (user){
                 const result = await this.userRepository.findBlocked(userId, user);
+                if (result) {
+                    await Promise.all(
+                        result.map(async (doc) => {
+                            if (doc.image) {
+                                doc.image = await Promise.all(
+                                    doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                                );
+                            }
+                        })
+                    );
+                }
                 return result ? result : [];
-            }
+            };
             return null 
         } catch (error) {
            throw new Error('something happend in blockList') 

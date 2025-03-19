@@ -35,21 +35,32 @@ export interface TotalMonthlySalesData {
 
 export type EventSales = {
   _id: string;
-  title: string;
-  description: string;
-  image: string[]; // Assuming images are stored as an array of URLs
-  location: string;
-  locationURL: string;
-  eventDate: Date;
-  slots: number;
-  totalEntries: number;
-  price: number;
+  userId: string;
+  eventId: {
+    _id: string;
+    title: string;
+    description: string;
+    image: string[]; // Assuming images are stored as an array of URLs
+    location: string;
+    locationURL: string;
+    eventDate: Date;
+    slots: number;
+    totalEntries: number;
+    price: number;
+    totalSales: number;
+    buyers: string[]; // Assuming buyers are stored as an array of ObjectId references
+    createdAt: Date;
+    updatedAt: Date;
+    __v: number;
+  };
+  saleType: string;
+  billedAmount: number;
+  bookedSlots: number;
   createdAt: Date;
   updatedAt: Date;
   __v: number;
-  totalSales: number;
-  buyers: string[]; // Assuming buyers are stored as an array of ObjectId references
 };
+
 
 export type Booking = {
   _id: string;
