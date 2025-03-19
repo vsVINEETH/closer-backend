@@ -33,7 +33,7 @@ export class UserAuthController {
         const s3ClientAccessControll = new S3ClientAccessControll()
         this.logUseCase = new LogUser(userRepository, token, bcrypt, s3ClientAccessControll);
         this.signupUseCase = new SignupUser( userRepository, mailer, bcrypt, otp, token, s3ClientAccessControll);
-        this.securityUseCase = new Security(userRepository, bcrypt, otp, mailer)
+        this.securityUseCase = new Security(userRepository, bcrypt, otp, mailer, s3ClientAccessControll)
     };
 
     login = async (req: Request, res: Response, next: NextFunction) => {

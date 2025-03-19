@@ -222,6 +222,7 @@ export class UserRepository implements IUserRepository {
             lookingFor,
             image: image,
             setupCompleted: true,
+            
           },
         },
         { new: true }
@@ -230,12 +231,23 @@ export class UserRepository implements IUserRepository {
       if (!userDoc) {
         return null;
       }
+
       return {
         id: userDoc.id,
         username: userDoc.username,
         email: userDoc.email,
         setupCompleted: userDoc.setupCompleted,
         image: userDoc.image,
+        prime: userDoc.prime
+        ? {
+            type: userDoc.prime.type ?? "Basic",
+            isPrime: userDoc.prime.isPrime,
+            primeCount: userDoc.prime.primeCount,
+            startDate: userDoc.prime.startDate ?? undefined,
+            endDate: userDoc.prime.endDate ?? undefined,
+            billedAmount: userDoc.prime.billedAmount ?? 0,
+          }
+        : undefined,
       };
     } catch (error) {
       throw new Error("something happend in update");

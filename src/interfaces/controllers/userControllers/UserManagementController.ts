@@ -28,7 +28,7 @@ export class UserManagementController {
         const otp = new OTP();
         const userRepository = new UserRepository();
         const s3ClientAccessControll = new S3ClientAccessControll()
-        this.securityUseCase = new Security(userRepository, bcrypt, otp, mailer);
+        this.securityUseCase = new Security(userRepository, bcrypt, otp, mailer, s3ClientAccessControll);
         this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll);
     };
 
