@@ -1,7 +1,6 @@
 FROM node:alpine3.20
 
 WORKDIR /app
-
 # Copy package files
 COPY package*.json ./
 
