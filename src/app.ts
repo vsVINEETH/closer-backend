@@ -22,7 +22,12 @@ const app = express()
 const server = createServer(app);
 const port = process.env.PORT || 5000;
 
-app.use(cors({ origin: process.env.ORIGIN, credentials: true, }));
+//app.use(cors({ origin: process.env.ORIGIN, credentials: true, }));
+app.use(cors({
+    origin: ["https://appcloser.xyz","https://www.appcloser.xyz" ,"https://api.appcloser.xyz"],
+    methods: ["GET", "POST"],
+    credentials: true
+}));
 
 //Logging
 app.use(morgan("dev"));
