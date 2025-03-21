@@ -17,12 +17,16 @@ import { createLoggingMiddleware } from './interfaces/middlewares/logging';
 
 dotenv.config();
 
-
 const app = express()
 const server = createServer(app);
 const port = process.env.PORT || 5000;
 
-app.use(cors({ origin: process.env.ORIGIN, credentials: true, }));
+//app.use(cors({ origin: process.env.ORIGIN, credentials: true, }));
+app.use(cors({
+    origin: ["https://appcloser.xyz","https://www.appcloser.xyz" ,"https://api.appcloser.xyz"],
+    methods: ["GET","POST","PUT","PATCH","DELETE"],
+    credentials: true
+}));
 
 //Logging
 app.use(morgan("dev"));
@@ -53,5 +57,5 @@ export let io: any;
 io = setupSocket(server)
 
 server.listen( port, ()=> {
- console.log(`Server running on http://localhost:${port}`)
-})
+ console.log(`Server running`);
+});
