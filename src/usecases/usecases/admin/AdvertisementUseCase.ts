@@ -3,6 +3,7 @@ import { AdvertisementDTO } from "../../dtos/AdvertisementDTO";
 import { SearchFilterSortParams } from "../../dtos/CommonDTO";
 import { paramToQueryAdvertisement } from "../../../interfaces/utils/paramToQuery";
 import { IS3Client } from "../../interfaces/IS3Client";
+
 export class AdvertisementManagement {
     constructor(
         private advertisementRepository: IAdvertisementRepository,

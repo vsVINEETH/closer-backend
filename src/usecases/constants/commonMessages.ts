@@ -6,6 +6,7 @@ export enum ResponseMessages {
     FAILED_TO_SHARE_OTP = 'Failed to share OTP',
     FAILED_TO_CREATE_ORDER = 'Failed to create order',
     FAILED_TO_UPLOAD = 'Failed to upload',
+    FAILED_TO_GET_LOCATION = 'Failed to get location',
 
 
     FILE_UPLOADED_SUCCESSFULLY = 'File uploaded successfully',

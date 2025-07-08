@@ -8,6 +8,8 @@ import {
 import { EmployeeModel } from "../persistence/models/EmployeeModel";
 import { SortOrder } from "../config/database";
 import { Filter } from "../../../types/express";
+
+
 export class EmployeeRepository implements IEmployeeRepository {
     
   async findByEmail(email: string): Promise<EmployeeAccessDTO | null> {
@@ -30,7 +32,6 @@ export class EmployeeRepository implements IEmployeeRepository {
   async findById(employeeId: string): Promise<EmployeeAccessDTO | null> {
     try {
       const employee = await EmployeeModel.findById(employeeId);
-
       return employee
         ? {
             id: employee.id,
@@ -57,6 +58,7 @@ export class EmployeeRepository implements IEmployeeRepository {
         .sort(sort)
         .skip(skip)
         .limit(limit);
+
       const emp = employee.map(
         (emp) =>
           new Employee(
@@ -74,7 +76,7 @@ export class EmployeeRepository implements IEmployeeRepository {
     } catch (error) {
       throw new Error("something happend in findAll");
     }
-  }
+  };
 
   async create(employeeData: EmployeeCreate): Promise<void> {
     try {
@@ -89,7 +91,7 @@ export class EmployeeRepository implements IEmployeeRepository {
     } catch (error) {
       throw new Error("something happend in create");
     }
-  }
+  };
 
   async blockById(employeeId: string, status: boolean): Promise<boolean | null> {
     try {
@@ -106,7 +108,7 @@ export class EmployeeRepository implements IEmployeeRepository {
     } catch (error) {
       throw new Error("something happend in blockById");
     }
-  }
+  };
 
   async updatePassword(employeeId: string, newPassword: string): Promise<boolean | null> {
     try {
@@ -115,15 +117,14 @@ export class EmployeeRepository implements IEmployeeRepository {
         { password: newPassword },
         { new: true }
       );
-      if (employee) {
-        return true;
-      }
-
-      return null;
+      // if (employee) {
+      //   return true;
+      // }
+      return employee ? true : null;
     } catch (error) {
       throw new Error("something happend in update password");
     }
-  }
+  };
 
   async dashboardData(filterConstraints: Filter): Promise<EmployeeStats[] | null> {
     try {

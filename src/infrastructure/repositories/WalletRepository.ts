@@ -115,4 +115,4 @@ export class WalletRepository implements IWalletRepository {
       throw new Error("something happend in debitMoney");
     }
   }
-}
+};

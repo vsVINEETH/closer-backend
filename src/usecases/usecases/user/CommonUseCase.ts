@@ -1,21 +1,22 @@
-import { Preferences } from "../../../../types/express";
+import { FormattedLocation, Preferences } from "../../../../types/express";
 import { User } from "../../../domain/entities/User";
 import { IUserRepository } from "../../../domain/repositories/IUserRepository";
 import { UserDetails } from "../../dtos/ChatDTO";
 import { UserDTO } from "../../dtos/UserDTO";
 import { IS3Client } from "../../interfaces/IS3Client";
+import { IGeolocation } from "../../interfaces/IGeolocation";
 
 export class CommonOperations {
     constructor(
         private userRepository: IUserRepository,
         private s3: IS3Client,
+        private geolocation: IGeolocation
     ) { }
 
 
     private  objectFormatter = async (userPreferences: Preferences): Promise<Preferences> => {
         try {
             let ageRange;
-
             if(Array.isArray(userPreferences.ageRange)){
                 ageRange = userPreferences.ageRange.map(Number) as [number, number]
             }else{
@@ -244,5 +245,15 @@ export class CommonOperations {
         } catch (error) {
            throw new Error('something happend in updateUserLocation') 
         }
-    }
+    };
+
+
+    async fetchLocation(latitude: string, longitude: string):Promise<FormattedLocation | null>{
+        try {
+           const location = await this.geolocation.GetLocation(latitude, longitude);
+           return location;
+        } catch (error) {
+           throw new Error('something happend in fetchLocation') 
+        };
+    };
 };

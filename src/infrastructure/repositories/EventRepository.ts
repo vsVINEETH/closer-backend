@@ -33,7 +33,7 @@ export class EventRepository implements IEventRepository {
         } catch (error) {
            throw new Error('something happend in findById') 
         }
-    }
+    };
 
     async create(eventData: EventDTO): Promise<boolean | null> {
         try {

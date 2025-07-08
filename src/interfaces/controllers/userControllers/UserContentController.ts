@@ -45,6 +45,8 @@ export class UserContentController {
       }
     };
 
+    
+
     voteContent = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { blogId, voteType} = req.body;

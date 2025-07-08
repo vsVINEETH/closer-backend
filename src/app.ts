@@ -23,9 +23,10 @@ const port = process.env.PORT || 5000;
 
 //app.use(cors({ origin: process.env.ORIGIN, credentials: true, }));
 app.use(cors({
-    origin: ["https://appcloser.xyz","https://www.appcloser.xyz" ,"https://api.appcloser.xyz"],
-    methods: ["GET","POST","PUT","PATCH","DELETE"],
-    credentials: true
+    origin: ["https://appcloser.xyz","https://www.appcloser.xyz" ,"https://api.appcloser.xyz","http://localhost:3000"],
+    credentials: true,
+    methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+    
 }));
 
 //Logging

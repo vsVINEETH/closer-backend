@@ -5,6 +5,7 @@ import { Filter, Preferences } from "../../../types/express/index";
 import { UserDetails } from "../../usecases/dtos/ChatDTO";
 import { Prime } from "../../usecases/dtos/SubscriptionDTO";
 import { UpdateWriteOpResult } from "mongoose";
+import { UserDocument } from "../../infrastructure/persistence/interfaces/IUserModel";
 export interface IUserRepository {
     findByEmail(email: string): Promise<UserDTO | null>;
     findById(userId: string): Promise<UserDTO | null>;

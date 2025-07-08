@@ -99,3 +99,10 @@ export interface Filter {
 }
 
 
+export type FormattedLocation = { 
+    latitude: string,
+    longitude: string,
+    city: string,
+    state: string,
+    country: string,
+}

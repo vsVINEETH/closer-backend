@@ -213,6 +213,7 @@ export class ContentRepository implements IContentRepository {
       };
       
       const filterMatch: FilterMatchType = {};
+      
       if (startDate && endDate) {
         filterMatch.createdAt = { $gte: startDate, $lte: endDate };
       }

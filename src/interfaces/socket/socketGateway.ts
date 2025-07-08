@@ -220,6 +220,7 @@ export class SocketGateway {
 
       // webrtc connection establishing
       socket.on("webrtcSignal", async (data) => {
+        console.log(data, 'something')
         try {
           if (data.isCaller) {
             if (data?.ongoingCall?.participants?.receiver?.socketId) {
@@ -249,7 +250,7 @@ export class SocketGateway {
 
       //end call
       socket.on("hangup", async (data) => {
-        console.log(data)
+        console.log(data,'lop')
         let socketIdToEmitTo;
         if (
           data?.ongoingCall?.participants?.caller?.userId === data.userHangingupId
