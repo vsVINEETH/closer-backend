@@ -42,7 +42,7 @@ export class CategoryManagement {
                 queryResult.limit
             );
           } else {
-            categoryData = await this.categoryRepository.findAll();
+            categoryData = await this.categoryRepository.findAll({isListed: true});
           } 
 
            return categoryData ? {category: categoryData.category, total: categoryData.total} : null;

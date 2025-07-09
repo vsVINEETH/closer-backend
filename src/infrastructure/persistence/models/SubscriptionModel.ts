@@ -17,7 +17,7 @@ const subscriptionSchema: Schema = new Schema({
       }
 }, { timestamps: true });
 
-export const SubscriptionModel = mongoose.model('Subscription', subscriptionSchema);
+export const SubscriptionModel = mongoose.model<SubscriptionDocument>('Subscription', subscriptionSchema);
 
 export const initializeSubscriptionPlans = async () => {
     const plans = [

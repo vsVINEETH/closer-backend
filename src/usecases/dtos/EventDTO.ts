@@ -22,8 +22,20 @@ export type BookingDetails = {
   bookedSlots: number;
 };
 
-export interface EventDTO {
+export interface EventBaseType{
     id?: string,
+    title: string,
+    description: string,
+    image?: string[],
+    location: string,
+    locationURL: string,
+    eventDate: string,
+    slots?:number,
+    price?:number,
+}
+
+export interface EventDTO {
+    id: string,
     title: string,
     description: string,
     image: string[],
@@ -31,10 +43,34 @@ export interface EventDTO {
     locationURL: string,
     eventDate: string,
     createdAt?: string,
-    slots:number,
+    slots?:number,
     totalEntries?:number,
-    price:number,
-    buyers: 
+    totalSales?: number,
+    price?:number,
+    buyers?: 
+            {
+              userId:string,
+              slotsBooked: number,
+              totalPaid: number,
+            }[],
+          
+}
+
+
+export interface EventSlots {
+    id: string,
+    title: string,
+    description: string,
+    image: string[],
+    location: string,
+    locationURL: string,
+    eventDate: string,
+    createdAt?: string,
+    slots?:number,
+    totalEntries?:number,
+    totalSales?: number,
+    price?:number,
+    buyers?: 
             {
               userId:string,
               slotsBooked: number,
@@ -43,7 +79,7 @@ export interface EventDTO {
           
 }
 export interface EditEventDTO {
-    _id: string,
+    id: string,
     title: string,
     description: string,
     image: string[],

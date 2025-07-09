@@ -37,7 +37,7 @@ export class EmployeeManagementController {
             if (employeeData) {
                 res.status(HttpStatus.OK).json(employeeData);
                 return
-            }
+            };
             res.status(HttpStatus.NO_CONTENT).json({ message: ResponseMessages.NO_CONTENT_OR_DATA});
             return;
         } catch (error) {
@@ -49,9 +49,9 @@ export class EmployeeManagementController {
         try {
             const { name, email } = req.body;
             const filterOptions = await paramsNormalizer(req.query);
-            const result = await this.empMgntUseCase.createEmployee(name, email, filterOptions);
-            if (result) {
-                res.status(HttpStatus.OK).json({ message: ResponseMessages.CREATED_SUCCESSFULLY })
+            const employeeData = await this.empMgntUseCase.createEmployee(name, email, filterOptions);
+            if (employeeData) {
+                res.status(HttpStatus.OK).json({ employeeData, message: ResponseMessages.CREATED_SUCCESSFULLY })
                 return
             }
             res.status(HttpStatus.CONFLICT).json({ message: ResponseMessages.EXISTING_RESOURCE })

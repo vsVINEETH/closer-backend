@@ -2,6 +2,7 @@ import { IAdminRepository } from "../../../domain/repositories/IAdminRepository"
 import { AdminDTO } from "../../dtos/AdminDTO";
 import { IBcrypt } from "../../interfaces/IBcrypt";
 import { IToken } from "../../interfaces/IToken";
+import { toAdminEntity, toAdminDTO } from "../../mappers/AdminMapper";
 
 export class LogAdmin {
     private role: string;
@@ -16,26 +17,25 @@ export class LogAdmin {
             return this.token.generateTokens(userId, role);
         } catch (error) {
             throw new Error('something in generateToken')
-        }
-    }
-
+        };
+    };
 
     async login(email: string, password: string): Promise<{ admin: AdminDTO | null, tokens: { accessToken: string, refreshToken: string } | null }> {
         try {
             const admin = await this.adminRepository.findByEmail(email);
-            if (!admin) { return { admin: null, tokens: null } }
+            if (!admin) { return { admin: null, tokens: null } };
+
+            const adminEntity = toAdminEntity(admin);
+            const adminDTO = toAdminDTO(adminEntity);
 
             const result = admin.password ? await this.bcrypt.compare(password, admin.password) : false;
             if (result) {
                 const tokens = this.generateToken(admin.id, this.role);
                 return {
-                    admin: {
-                        id: admin.id,
-                        email: admin.email,
-                    },
+                    admin: adminDTO,
                     tokens: tokens
-                }
-            }
+                };
+            };
 
             return { admin: null, tokens: null }
         } catch (error) {

@@ -7,12 +7,14 @@ import { CommonOperations } from "../../usecases/usecases/user/CommonUseCase";
 import { ChatManagement } from "../../usecases/usecases/user/ChatUseCase";
 import { ChatRepository } from "../../infrastructure/repositories/ChatRepository";
 import { UserDTO } from "../../usecases/dtos/UserDTO";
+import { Geolocation } from "../../infrastructure/services/Geolocation";
 
 import { MissedCall, OngoingCall, Participants } from "../../../types/express";
 import { S3ClientAccessControll } from "../../infrastructure/services/S3Client";
 const userRepository = new UserRepository();
 const s3ClientAccessControll = new S3ClientAccessControll()
-const commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll);
+const geolocation = new Geolocation()
+const commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll, geolocation);
 
 const notificationRepository = new NotificationRepository();
 const notifyUserUseCase = new NotifyUser(notificationRepository);
@@ -220,6 +222,7 @@ export class SocketGateway {
 
       // webrtc connection establishing
       socket.on("webrtcSignal", async (data) => {
+        console.log(data, 'something')
         try {
           if (data.isCaller) {
             if (data?.ongoingCall?.participants?.receiver?.socketId) {
@@ -249,7 +252,7 @@ export class SocketGateway {
 
       //end call
       socket.on("hangup", async (data) => {
-        console.log(data)
+        console.log(data,'lop')
         let socketIdToEmitTo;
         if (
           data?.ongoingCall?.participants?.caller?.userId === data.userHangingupId

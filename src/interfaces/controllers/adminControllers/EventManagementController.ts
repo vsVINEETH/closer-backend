@@ -73,6 +73,7 @@ export class EventManagementController {
     updateEvent = async (req: Request, res: Response, next: NextFunction) => {
         try {
            const updatedEventData = req.body;
+           console.log(req.body)
            const filterOptions = await paramsNormalizer(req.query)
            const result = await this.eventUseCase.updateEvent(updatedEventData, filterOptions);
            if(result){

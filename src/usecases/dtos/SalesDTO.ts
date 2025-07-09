@@ -108,6 +108,14 @@ export type DailySale = {
     eventSales: EventSale[];
     totalMonthlySales: MonthlySalesSummary[];
   };
+
+
+   export type SalesReportDTO = {
+    subscriptionSales: SubscriptionSale[];
+    eventSales: EventSale[];
+    totalMonthlySales: MonthlySalesSummary[];
+  };
+  
   
 
 

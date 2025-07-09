@@ -12,6 +12,7 @@ import { Filter, Preferences } from "../../../types/express";
 import { UserDetails } from "../../usecases/dtos/ChatDTO";
 import { Prime } from "../../usecases/dtos/SubscriptionDTO";
 import { UpdateResult } from "../../usecases/dtos/CommonDTO";
+import { UserDocument } from "../persistence/interfaces/IUserModel";
 
 export class UserRepository implements IUserRepository {
   
@@ -659,7 +660,8 @@ export class UserRepository implements IUserRepository {
       const user = await UserModel.findById(userPreferences.userId);
       if (!user || !user?.location || !user?.location?.coordinates) {
         return [];
-      }
+      };
+
       const blockedUsers = user.blockedUsers
         ? user.blockedUsers.map((userId) => new Types.ObjectId(userId))
         : [];

@@ -6,6 +6,14 @@ export interface ITransaction {
     updatedAt: Date;
   }
 
+  export interface Transaction  {
+    amount: number;
+    description: string;
+    paymentType: string; 
+    createdAt: string;
+    updatedAt: string;
+  }
+
 export interface WalletDTO {
     id:string,
     userId: string;

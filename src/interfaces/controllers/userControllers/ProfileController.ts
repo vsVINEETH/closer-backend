@@ -9,6 +9,7 @@ import { CommonOperations } from "../../../usecases/usecases/user/CommonUseCase"
 //repositories
 import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
 import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
+import { Geolocation } from "../../../infrastructure/services/Geolocation";
 
 export class ProfileControll {
     private commonUseCase: CommonOperations;
@@ -16,7 +17,8 @@ export class ProfileControll {
     constructor(){
         const userRepository = new UserRepository();
         const s3ClientAccessControll = new S3ClientAccessControll()
-        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll);
+        const geolocation = new Geolocation()
+        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll, geolocation);
     };
 
     profile = async (req: Request, res: Response, next: NextFunction) => {

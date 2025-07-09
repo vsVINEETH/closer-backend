@@ -97,3 +97,12 @@ export interface Filter {
   startDate: string,
   endDate: string ,
 }
+
+
+export type FormattedLocation = { 
+    latitude: string,
+    longitude: string,
+    city: string,
+    state: string,
+    country: string,
+}

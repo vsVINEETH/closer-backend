@@ -14,7 +14,7 @@ export interface EmployeeCreate {
     name: string;
     email: string;
     password?: string;
-    isBlocked?: false;
+    isBlocked?: boolean;
 }
 
 export interface EmployeeAccessDTO {

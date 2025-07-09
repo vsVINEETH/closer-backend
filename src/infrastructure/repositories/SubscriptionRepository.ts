@@ -3,29 +3,36 @@ import { Subscription } from "../../domain/entities/Subscription";
 import { SubscriptionDTO } from "../../usecases/dtos/SubscriptionDTO";
 import { SubscriptionModel } from "../persistence/models/SubscriptionModel";
 import { SortOrder } from "../config/database";
+import { SubscriptionDocument } from "../persistence/interfaces/ISubscription";
 export class SubscriptionRepository implements ISubscriptionRepository {
+  
   async findAll<T>( query: Record<string, T> = {},
       sort: { [key: string]: SortOrder } = {},
       skip: number = 0,
-      limit: number = 0): Promise<{subscription: SubscriptionDTO[], total: number} | null> {
+      limit: number = 0): Promise< SubscriptionDocument[] | null> {
     try {
-      const data = await SubscriptionModel.find(query)
+      const subscriptionDocs = await SubscriptionModel.find(query)
       .sort(sort)
       .skip(skip)
       .limit(limit);
-      
-      const total = await SubscriptionModel.countDocuments(query)
-      return {subscription: data, total: total}
+      return subscriptionDocs;
     } catch (error) {
       throw new Error("something happend in findAll");
     }
-  }
+  };
 
-  async findById(subscriptionId: string): Promise<SubscriptionDTO | null> {
+  async countDocs<T>(query: Record<string, T> = {}): Promise<number> {
     try {
-   
-      const data = await SubscriptionModel.findById(subscriptionId);
+      const totalDocs = await SubscriptionModel.countDocuments(query);
+      return totalDocs;
+    } catch (error) {
+      throw new Error("something happend in countDocs");
+    };
+  };
 
+  async findById(subscriptionId: string): Promise<SubscriptionDocument | null> {
+    try {
+      const data = await SubscriptionModel.findById(subscriptionId);
       return data;
     } catch (error) {
       throw new Error("something happend in findById");
@@ -48,12 +55,10 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   }
 
   async updateById(
-    subscriptionId: string,
-    field: string,
-    value: string
+    subscriptionId: string, updateData:{ [field: string]: number }
+
   ): Promise<boolean | null> {
     try {
-      const updateData = { [field]: parseInt(value) };
       const data = await SubscriptionModel.findByIdAndUpdate(
         subscriptionId,
         {

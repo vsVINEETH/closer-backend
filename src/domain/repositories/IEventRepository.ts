@@ -1,14 +1,17 @@
 
-import { EventDTO, UpcomingEventCount } from "../../usecases/dtos/EventDTO";
+import { EventBaseType, EventDTO, UpcomingEventCount, EventSlots } from "../../usecases/dtos/EventDTO";
+import { Event } from "../entities/Event";
 import { SortOrder } from "../../infrastructure/config/database";
 import { Filter } from "../../../types/express";
+import { EventDocument } from "../../infrastructure/persistence/interfaces/IEventModel";
 export interface IEventRepository {
-    findById(eventId: string): Promise<EventDTO | null>;
-    findAll<T>(query?: Record<string, T>, sort?:{ [key: string]: SortOrder } , skip?: number, limit?: number): Promise<{events: EventDTO[], total: number} | null>
-    create(eventData: EventDTO): Promise<boolean | null>;
-    update(eventId: string, updatedData: Partial<EventDTO>): Promise<EventDTO | null>;
-    updateSlots(eventId: string, bookedPrice: number, userId: string, bookedSlots: number): Promise<EventDTO | null>
+    findById(eventId: string): Promise<EventDocument | null>;
+    findAll<T>(query?: Record<string, T>, sort?:{ [key: string]: SortOrder } , skip?: number, limit?: number): Promise< EventDocument[] | null>
+    create(eventData: EventBaseType): Promise<boolean | null>;
+    countDocs<T>(query: Record<string, T> ): Promise<number>
+    update(eventId: string, updatedData: EventBaseType): Promise<boolean | null>;
+    updateSlots(event: EventDTO): Promise<void>;
     deleteById(eventId: string): Promise<boolean | null>;
     dashboardData(filterConstraints: Filter): Promise<UpcomingEventCount[]>
-    findBookedEvents(userId: string): Promise<EventDTO[] | null>
+    findBookedEvents(userId: string): Promise<EventDocument[] | null>
 };
