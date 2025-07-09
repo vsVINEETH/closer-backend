@@ -5,7 +5,7 @@ import { IToken } from "../../interfaces/IToken";
 import { IOtp } from "../../interfaces/IOtp";
 import { IMailer } from "../../interfaces/IMailer";
 import { tempEmployeeStore } from "../../dtos/CommonDTO";
-import { toDTO, toEntity } from "../../mappers/EmployeeMapper";
+import { toDTO, toEntity } from "../../mappers/employeeMapper";
 export class Security {
   constructor(
     private employeeRepository: IEmployeeRepository,

@@ -10,7 +10,6 @@ import { UserManagement } from "../../../usecases/usecases/admin/UserMgntUseCase
 import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
 import { paramsNormalizer } from "../../utils/filterNormalizer";
 
-
 export class UserManagementController {
     private userMgntUseCase: UserManagement;
 
