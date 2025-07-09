@@ -5,7 +5,7 @@ import { EmployeeAccessDTO, EmployeeCreate, EmployeeStats } from "../../dtos/Emp
 import { IBcrypt } from "../../interfaces/IBcrypt";
 import { IMailer } from "../../interfaces/IMailer";
 import { paramToQueryEmployee } from "../../../interfaces/utils/paramToQuery";
-import { toDTO, toDTOs, toEntities, toEntity, toPersistance } from "../../mappers/EmployeeMapper";
+import { toDTO, toDTOs, toEntities, toEntity, toPersistance } from "../../mappers/employeeMapper";
 export class EmployeeManagement {
     constructor(
         private employeeRepository: IEmployeeRepository,

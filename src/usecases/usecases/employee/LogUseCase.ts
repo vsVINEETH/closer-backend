@@ -2,7 +2,7 @@ import { IEmployeeRepository } from "../../../domain/repositories/IEmployeeRepos
 import { EmployeeDTO } from "../../dtos/EmployeeDTO";
 import { IBcrypt } from "../../interfaces/IBcrypt";
 import { IToken } from "../../interfaces/IToken";
-import { toDTO, toEntity } from "../../mappers/EmployeeMapper";
+import { toDTO, toEntity } from "../../mappers/employeeMapper";
 
 export class LogEmployee {
     private role: string;
