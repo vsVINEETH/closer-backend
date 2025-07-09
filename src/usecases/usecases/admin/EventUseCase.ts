@@ -11,6 +11,8 @@ import { SearchFilterSortParams } from "../../dtos/CommonDTO";
 import { RazorpayEventPayment } from "../../dtos/EventDTO";
 import { paramToQueryEvent } from "../../../interfaces/utils/paramToQuery";
 import { IS3Client } from "../../interfaces/IS3Client";
+import { toDTOs, toEntities, toEntity, toDTO } from "../../mappers/EventMapper";
+
 
 export enum SaleType {
     SUBSCRIPTION = 'subscription',
@@ -29,10 +31,41 @@ export class EventManagement {
         private s3: IS3Client
     ){};
 
+    private async slotCalculation(eventId: string, bookedPrice: number, userId: string, bookedSlots: number): Promise<EventDTO | null>{
+        const eventDoc = await this.eventRepository.findById(eventId);
+        if(eventDoc === null) return null;
+        const eventEntity = toEntity(eventDoc);
+
+        if(eventEntity === null) return null;
+
+        const event = toDTO(eventEntity);
+        if (!event) return null;
+
+        const totalPrice = bookedPrice * bookedSlots;
+
+        
+        if (!Array.isArray(event.buyers)) {
+            event.buyers = [];
+        }
+
+        const existingBuyer =  event.buyers.find(b => b.userId.toString() === userId);
+
+        if (existingBuyer) {
+            existingBuyer.slotsBooked += bookedSlots;
+            existingBuyer.totalPaid += totalPrice;
+        } else {
+            event.buyers.push({ userId, slotsBooked: bookedSlots, totalPaid: totalPrice });
+        };
+
+        event.slots = (event.slots ?? 0) - bookedSlots;
+        event.totalEntries = (event.totalEntries ?? 0) + bookedSlots;
+        event.totalSales = (event.totalSales ?? 0) + totalPrice;
+        return event
+    }
+
     private async notifyPrimeUsers(evetData: EventDTO): Promise<void> {
         try {
             const users = await this.userRepository.findAll({ "prime.isPrime": true });
-
             if(!users){ return };
 
             const htmlContent = this.mailer.generateNewEventNotifyEmail(evetData);
@@ -55,9 +88,17 @@ export class EventManagement {
 
     private async notifySlotHolders(eventId: string, userId: string): Promise<void> {
         try {
-            const data = await this.eventRepository.findById(eventId)
+            const event = await this.eventRepository.findById(eventId);
+
+            if(event === null) return;
+
+            const eventEntity = toEntity(event);
+            if(eventEntity === null) return;
+
+            const eventData = toDTO(eventEntity)
+
             const user = await this.userRepository.findById(userId);
-            const htmlContent = this.mailer.generateEventReceiptEmail(data);
+            const htmlContent = this.mailer.generateEventReceiptEmail(eventData);
             if(user?.email)
             await this.mailer.SendEmail(
                 user.email,
@@ -70,7 +111,7 @@ export class EventManagement {
         }
     }
 
-    async fetchEvents(options: SearchFilterSortParams): Promise< {events: EventDTO[], total: number} | null> {
+    async fetchEvents(options: SearchFilterSortParams): Promise< {events: Event[], total: number} | null> {
         try {
             const queryResult = await paramToQueryEvent(options)
             const events = await this.eventRepository.findAll(
@@ -79,15 +120,20 @@ export class EventManagement {
                  queryResult.skip,
                  queryResult.limit
             );
-            if (events?.events) {
+            const eventsDocCount = await this.eventRepository.countDocs(queryResult.query)
+            const eventEntity = toEntities(events);
+            if(eventEntity === null) return null;
+
+            const eventData = toDTOs(eventEntity);
+            if (eventData?.events) {
                 await Promise.all(
-                    events.events.map(async (doc) => {
+                    eventData.events.map(async (doc) => {
                         doc.image = await Promise.all(
                             doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
                         );
                     })
                 );
-                return events;
+                return {events: eventData.events, total: eventsDocCount};
             };
             return null;
         } catch (error) {
@@ -98,11 +144,18 @@ export class EventManagement {
     async fetchEvent(eventId: string): Promise<EventDTO | null> {
         try {
             const event = await this.eventRepository.findById(eventId);
-            if(event){
-                event.image = await Promise.all(
-                    event.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+
+            if(event === null) return null;
+            const eventEntity = toEntity(event);
+
+            if(eventEntity === null) return null;
+            const eventData = toDTO(eventEntity)
+
+            if(eventData){
+                eventData.image = await Promise.all(
+                    eventData.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
                 );
-                return event;
+                return eventData;
             }
             return null;
         } catch (error) {
@@ -110,7 +163,7 @@ export class EventManagement {
         }
     }
 
-    async createEvent(eventData: EventDTO, query: SearchFilterSortParams, imageFiles: Express.Multer.File[]): Promise< {events: EventDTO[], total: number} | null> {
+    async createEvent(eventData: EventDTO, query: SearchFilterSortParams, imageFiles: Express.Multer.File[]): Promise< {events: Event[], total: number} | null> {
         try {
             const image: string[] = [];
             for(let post of imageFiles){
@@ -118,7 +171,19 @@ export class EventManagement {
                image.push(fileName);
             };
 
-           const result = await this.eventRepository.create({...eventData, image});
+            const newEvent = {
+            title: eventData.title,
+            description: eventData.description,
+            image: eventData.image,
+            location: eventData.location,
+            locationURL: eventData.locationURL,
+            eventDate: eventData.eventDate,
+            slots: Number(eventData.slots),
+            price: Number(eventData.price),
+            };
+            
+
+           const result = await this.eventRepository.create({...newEvent, image});
             if(!result ){ return null };
             const queryResult = await paramToQueryEvent(query)
             const events = await this.eventRepository.findAll(
@@ -127,10 +192,14 @@ export class EventManagement {
                  queryResult.skip,
                  queryResult.limit
             );
+            const eventsDocCount = await this.eventRepository.countDocs(queryResult.query)
+            const eventEntity = toEntities(events);
+            if(eventEntity === null) return null;
 
-            if (events?.events) {
+            const eventDocs = toDTOs(eventEntity);
+            if (eventDocs?.events) {
                 await Promise.all(
-                    events.events.map(async (doc) => {
+                    eventDocs.events.map(async (doc) => {
                         doc.image = await Promise.all(
                             doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
                         );
@@ -139,15 +208,26 @@ export class EventManagement {
             };
             
             this.notifyPrimeUsers(eventData);
-            return events ? events : null;
+            return eventDocs ? {events: eventDocs.events, total: eventsDocCount}: null;
         } catch (error) {
             throw new Error('something happend in createEvent')
         }
     };
 
-    async updateEvent(updatedEventData: EditEventDTO, query: SearchFilterSortParams): Promise<{events: EventDTO[], total: number} | null> {
+    async updateEvent(updatedEventData: EventDTO, query: SearchFilterSortParams): Promise<{events: Event[], total: number} | null> {
         try {
-            const result = await this.eventRepository.update(updatedEventData._id, updatedEventData);
+
+            const latestData =   {
+                title: updatedEventData.title,
+                description: updatedEventData.description,
+                location: updatedEventData.location,
+                locationURL: updatedEventData.locationURL,
+                eventDate: updatedEventData.eventDate,
+                slots: Number(updatedEventData.slots),
+                price: Number(updatedEventData.price),
+            };
+
+            const result = await this.eventRepository.update(updatedEventData.id, latestData);
             if(!result) {return null};
             const queryResult = await paramToQueryEvent(query)
             const events = await this.eventRepository.findAll(
@@ -156,15 +236,21 @@ export class EventManagement {
                  queryResult.skip,
                  queryResult.limit
             );
-            if (events?.events) {
+            const eventsDocCount = await this.eventRepository.countDocs(queryResult.query)
+            const eventEntity = toEntities(events);
+            if(eventEntity === null) return null;
+
+            const eventDocs = toDTOs(eventEntity);
+
+            if (eventDocs?.events) {
                 await Promise.all(
-                    events.events.map(async (doc) => {
+                    eventDocs.events.map(async (doc) => {
                         doc.image = await Promise.all(
                             doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
                         );
                     })
                 );
-                return events;
+                return {events: eventDocs.events, total: eventsDocCount};
             };
             return null;
         } catch (error) {
@@ -172,18 +258,25 @@ export class EventManagement {
         }
     };
 
-    async deleteEvent(eventId: string, query: SearchFilterSortParams): Promise< {events: EventDTO[], total: number}| null> {
+    async deleteEvent(eventId: string, query: SearchFilterSortParams): Promise< {events: Event[], total: number}| null> {
         try {
             const event = await this.eventRepository.findById(eventId)
+
+            if(event === null) return null;
+            const eventEntity = toEntity(event);
+
+            if(eventEntity === null) return null;
+            const eventData = toDTO(eventEntity)
            
-            if (event) {
+            if (eventData) {
                 await Promise.all(
-                    event.image.map(async (val) => await this.s3.deleteFromS3(val as string))
+                    eventData.image.map(async (val) => await this.s3.deleteFromS3(val as string))
                 );
-                event.image = [];
+                eventData.image = [];
             };
             const result = await this.eventRepository.deleteById(eventId);
             if(!result){return null}
+
             const queryResult = await paramToQueryEvent(query)
             const events = await this.eventRepository.findAll(
                  queryResult.query,
@@ -191,16 +284,23 @@ export class EventManagement {
                  queryResult.skip,
                  queryResult.limit
             );
-            if (events?.events) {
+
+            const eventsDocCount = await this.eventRepository.countDocs(queryResult.query)
+            const eventEntities = toEntities(events);
+            if(eventEntities === null) return null;
+
+            const eventDocs = toDTOs(eventEntities);
+
+            if (eventDocs?.events) {
                 await Promise.all(
-                    events.events.map(async (doc) => {
+                    eventDocs.events.map(async (doc) => {
                         doc.image = await Promise.all(
                             doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
                         );
                     })
                 );
 
-                return events
+                return {events: eventDocs.events, total: eventsDocCount}
             };
             return null;
         } catch (error) {
@@ -223,7 +323,13 @@ export class EventManagement {
     try {
 
         const event = await this.eventRepository.findById(eventId);
-        if(event == null || slots > event.slots){
+        if(event === null) return null;
+        const eventEntity = toEntity(event);
+
+        if(eventEntity === null) return null;
+        const eventData = toDTO(eventEntity)
+        
+        if(eventData == null || (eventData.slots && slots > eventData.slots)){
             return null
         };
 
@@ -252,16 +358,19 @@ export class EventManagement {
     async verifyPayment(paymentData: RazorpayEventPayment ): Promise<boolean> {
         try {
             const { razorpay_order_id, razorpay_payment_id, razorpay_signature, userId, amount, eventId, currency, slots  } = paymentData;
-            console.log(slots)
             const isValid = await this.razorpay.verifyPayment({
                 orderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
                 signature: razorpay_signature,
             });
-            if (!isValid) { return false }
-            const actualBookedPrice = currency === "INR" ? amount / 100 : amount;
 
-            await this.eventRepository.updateSlots(eventId, actualBookedPrice, userId, slots)
+            if (!isValid) return false;
+            const actualBookedPrice = currency === "INR" ? amount / 100 : amount;
+            const event = await this.slotCalculation(eventId,actualBookedPrice, userId,  slots)
+            
+            if(event === null) return false;
+            console.log(event,'kolaa');
+            await this.eventRepository.updateSlots(event);
             await this.salesRepository.create({
                 userId,
                 eventId: eventId,
@@ -277,12 +386,15 @@ export class EventManagement {
             throw new Error('something happend in  verifyPayment')
         }
 
-    }
+    };
 
     async paymentUsingWallet(paymentData: BookingDetails): Promise<boolean> {
         try {
             const { userId, amount, eventId, bookedSlots } = paymentData;
-            await this.eventRepository.updateSlots(eventId, amount, userId, bookedSlots);
+            const event = await this.slotCalculation(eventId,amount, userId,  bookedSlots)
+            console.log(event)
+            if(event === null) return false;
+            await this.eventRepository.updateSlots(event);            
             await this.salesRepository.create({
                 userId,
                 eventId: eventId,
@@ -298,18 +410,51 @@ export class EventManagement {
     }
 
 
-    async bookedEvents(userId: string): Promise<EventDTO[] | null> {
+    async bookedEvents(userId: string): Promise<Event[] | null> {
         try {
-            const events = await this.eventRepository.findBookedEvents(userId);
-            if (events) {
+            const eventsDoc = await this.eventRepository.findBookedEvents(userId);
+            const eventEntity = toEntities(eventsDoc);
+            if(eventEntity === null) return null
+            const events = toDTOs(eventEntity)
+              events
+                ? events.events.map((event) => {
+                  
+                    const buyerDetails = event.buyers.find(
+                        (buyer) => buyer.userId.toString() === userId
+                    );
+    
+                    return {
+                        id: event.id,
+                        title: event.title,
+                        description: event.description,
+                        image: event.image,
+                        location: event.location,
+                        locationURL: event.locationURL,
+                        eventDate: event.eventDate,
+                        slots: event.slots,
+                        totalEntries: event.totalEntries,
+                        price: event.price,
+                        buyers: buyerDetails
+                            ? [
+                                {
+                                    userId: buyerDetails.userId.toString(),
+                                    slotsBooked: buyerDetails.slotsBooked,
+                                    totalPaid: buyerDetails.totalPaid,
+                                },
+                            ]
+                            : [], 
+                    };
+                })
+                : null;
+            if (events.events) {
                 await Promise.all(
-                    events.map(async (doc) => {
+                    events.events.map(async (doc) => {
                         doc.image = await Promise.all(
                             doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
                         );
                     })
                 );
-                return events;
+                return events.events;
             };
             return null;
         } catch (error) {

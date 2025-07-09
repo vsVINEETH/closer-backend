@@ -2,6 +2,7 @@ import { IEmployeeRepository } from "../../../domain/repositories/IEmployeeRepos
 import { EmployeeDTO } from "../../dtos/EmployeeDTO";
 import { IBcrypt } from "../../interfaces/IBcrypt";
 import { IToken } from "../../interfaces/IToken";
+import { toDTO, toEntity } from "../../mappers/EmployeeMapper";
 
 export class LogEmployee {
     private role: string;
@@ -22,7 +23,14 @@ export class LogEmployee {
 
     async login(email: string, password: string): Promise<{ emp: EmployeeDTO | null, tokens: { accessToken: string, refreshToken: string } | null, status: boolean }> {
         try {
-            const employee = await this.employeeRepository.findByEmail(email);
+            const employeeDoc = await this.employeeRepository.findByEmail(email);
+
+            if(employeeDoc == null)  return { emp: null, tokens: null, status: false };
+            const employeeEntity = toEntity(employeeDoc);
+
+            if(employeeEntity == null)  return { emp: null, tokens: null, status: false };
+            const employee = toDTO(employeeEntity);
+
             if (!employee) { return { emp: null, tokens: null, status: false } };
             if (employee.isBlocked === true) { return { emp: null, tokens: null, status: true } }
 

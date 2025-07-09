@@ -1,10 +1,11 @@
 import { ClientQuery, Filter } from "../../../../types/express/index";
 import { IEmployeeRepository } from "../../../domain/repositories/IEmployeeRepository";
 import { SearchFilterSortParams } from "../../dtos/CommonDTO";
-import { EmployeeAccessDTO, EmployeeStats } from "../../dtos/EmployeeDTO";
+import { EmployeeAccessDTO, EmployeeCreate, EmployeeStats } from "../../dtos/EmployeeDTO";
 import { IBcrypt } from "../../interfaces/IBcrypt";
 import { IMailer } from "../../interfaces/IMailer";
 import { paramToQueryEmployee } from "../../../interfaces/utils/paramToQuery";
+import { toDTO, toDTOs, toEntities, toEntity, toPersistance } from "../../mappers/EmployeeMapper";
 export class EmployeeManagement {
     constructor(
         private employeeRepository: IEmployeeRepository,
@@ -16,26 +17,36 @@ export class EmployeeManagement {
     async fetchData(options: SearchFilterSortParams): Promise<{ employee: EmployeeAccessDTO[]; total: number } | null> {
         try {
            
-            const queryResult = await paramToQueryEmployee(options)
-            const employeeData = await this.employeeRepository.findAll(
+            const queryResult = await paramToQueryEmployee(options);
+            const employees = await this.employeeRepository.findAll(
                 queryResult.query,
                 queryResult.sort,
                 queryResult.skip,
                 queryResult.limit
             );
-            if (!employeeData) {
-                return null;
-            }
+
+            const employeeEntity = toEntities(employees);
+            if(employeeEntity === null) return null;
+
+            const employeeData = toDTOs(employeeEntity)
+            console.log(employeeData)
+            if (!employeeData) return null;
             
-            return { employee: employeeData.employee, total: employeeData.total };
+            const employeeCount = await this.employeeRepository.countDocs(queryResult.query)
+            console.log(employeeCount,'helo')
+
+            return { employee: employeeData.employee, total: employeeCount };
         } catch (error) {
             throw new Error("something happend in fetchData");
         }
-    }
+    };
 
     async createEmployee(employeeName: string, email: string, query: SearchFilterSortParams): Promise<{ employee: EmployeeAccessDTO[]; total: number }| null> {
         try {
             const result = await this.employeeRepository.findByEmail(email);
+    
+            console.log(result)
+
             if (!result) {
                 const password = Math.floor(100000 + Math.random() * 900000).toString();
                 console.log(password);
@@ -46,21 +57,26 @@ export class EmployeeManagement {
                 this.mailer.SendEmail(email, "Joining Credentials", htmlJoining);
 
                 const hashedPassword = await this.bcrypt.Encrypt(password);
-                await this.employeeRepository.create({
-                    name:employeeName,
-                    email,
-                    password: hashedPassword,
-                });
+                const userDataToPersist = toPersistance({name:employeeName, email, password: hashedPassword})
 
+                await this.employeeRepository.create(userDataToPersist)
                 const queryResult = await paramToQueryEmployee(query)
-                const employeeData = await this.employeeRepository.findAll(
+                const employeesDoc = await this.employeeRepository.findAll(
                     queryResult.query,
                     queryResult.sort,
                     queryResult.skip,
                     queryResult.limit
-                )
-                return  employeeData ? { employee: employeeData.employee, total: employeeData.total } : null;
-            }
+                );
+
+                const employeeEntity = toEntities(employeesDoc);
+                if(employeeEntity === null) return null;
+
+                const employeeData = toDTOs(employeeEntity)
+                const employeeCount = await this.employeeRepository.countDocs(queryResult.query);
+
+                return  employeeData ? { employee: employeeData.employee, total: employeeCount } : null;
+            };
+        
             return null;
         } catch (error) {
             throw new Error("something happend in createEmployee");
@@ -69,23 +85,33 @@ export class EmployeeManagement {
 
     async blockEmployee(employeeId: string, query: SearchFilterSortParams): Promise<{ employee: EmployeeAccessDTO[]; total: number } | null> {
         try {
-            const employee = await this.employeeRepository.findById(employeeId);
+            const employeeDocs = await this.employeeRepository.findById(employeeId);
+
+            if(employeeDocs === null) return null;
+            const employeeEntity = toEntity(employeeDocs);
+
+            if(employeeEntity === null) return null;
+            const employee = toDTO(employeeEntity);
+            
             if (employee) {
                 const status: boolean = !employee.isBlocked;
 
-                const result = this.employeeRepository.blockById(employeeId, status);
-                if (!result) {
-                    return null;
-                }
+                const result = await this.employeeRepository.blockById(employeeId, status);
+                if (!result) return null;
 
                 const queryResult = await paramToQueryEmployee(query)
-                const employeeData = await this.employeeRepository.findAll(
+                const employees = await this.employeeRepository.findAll(
                     queryResult.query,
                     queryResult.sort,
                     queryResult.skip,
                     queryResult.limit
-                )
-                return  employeeData ? { employee: employeeData.employee, total: employeeData.total } : null;
+                );
+                const employeeEntity = toEntities(employees);
+                if(employeeEntity === null) return null;
+
+                const employeeData = toDTOs(employeeEntity);
+                const employeeCount = await this.employeeRepository.countDocs(queryResult.query);
+                return  employeeData ? { employee: employeeData.employee, total: employeeCount } : null;
             }
 
             return null;
@@ -102,5 +128,5 @@ export class EmployeeManagement {
         } catch (error) {
            throw new Error('something happend in dashboardData') 
         }
-    }
-}
+    };
+};

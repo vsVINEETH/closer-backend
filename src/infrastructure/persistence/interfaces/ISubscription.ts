@@ -8,4 +8,6 @@ enum PlanType {
 export interface SubscriptionDocument extends Document {
     planType:string,
     price: number,
+    isListed: boolean,
+    createdAt: string,
 }

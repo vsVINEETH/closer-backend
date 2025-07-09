@@ -8,6 +8,7 @@ import { ISalesRepository } from "../../domain/repositories/ISalesRepository";
 import { ClientQuery} from "../../../types/express";
 import { SearchFilterSortParams, tempUserStore } from "../dtos/CommonDTO";
 import { paramToQuerySubscription } from "../../interfaces/utils/paramToQuery";
+import { toDTO, toDTOs, toEntities, toEntity } from "../mappers/SubscriptionMapper";
 export enum SaleType {
     SUBSCRIPTION = 'subscription',
     EVENT = 'event'
@@ -24,27 +25,7 @@ export class SubscriptionManagement {
         private salesRepository: ISalesRepository
     ) { }
 
-    private async cashBack(userId: string, amount: number): Promise<number | void> {
-        try {
-            const userDetails = await this.userRepository.findById(userId);
-            let cashBackPercentage = 0;
 
-            if (userDetails?.prime) {
-                cashBackPercentage = userDetails.prime.primeCount === 1 ? 10 : 0;
-            }
-
-            if (cashBackPercentage) {
-
-                const cashBack = parseFloat(((amount * cashBackPercentage) / 100).toFixed(2));
-                await this.walletRepository.addMoney(userId, cashBack, '10% cash back')
-                return cashBack;
-            }
-            return
-        } catch (error) {
-            throw new Error('something happend in cashBack')
-        }
-
-    }
 
     private async setPrimeData(planType: string, userId: string, billedAmount: number): Promise<Prime> {
         try {
@@ -77,24 +58,56 @@ export class SubscriptionManagement {
 
     }
 
+
+    private async cashBack(userId: string, amount: number): Promise<number | void> {
+        try {
+            const userDetails = await this.userRepository.findById(userId);
+            let cashBackPercentage = 0;
+
+            if (userDetails?.prime) {
+                cashBackPercentage = userDetails.prime.primeCount === 1 ? 10 : 0;
+            }
+
+            if (cashBackPercentage) {
+
+                const cashBack = parseFloat(((amount * cashBackPercentage) / 100).toFixed(2));
+               
+                // await this.walletRepository.addMoney(userId, cashBack, '10% cash back')
+                return cashBack;
+            }
+            return
+        } catch (error) {
+            throw new Error('something happend in cashBack')
+        }
+
+    }
+
     async fetchData(options?: SearchFilterSortParams): Promise<{subscription: SubscriptionDTO[], total: number} | null> {
         try {
 
-            let subscriptionData;
+            let subscriptions;
+            let total;
+
             if(options){
                 const queryResult = await paramToQuerySubscription(options);
+                total = await this.subscriptionRepository.countDocs(queryResult.query)
 
-                subscriptionData = await this.subscriptionRepository.findAll(
+                subscriptions = await this.subscriptionRepository.findAll(
                     queryResult.query,
                     queryResult.sort,
                     queryResult.skip,
                     queryResult.limit
                 );
             } else {
-             subscriptionData = await this.subscriptionRepository.findAll();
-            }
-            
-            return subscriptionData ? {subscription: subscriptionData.subscription, total: subscriptionData.total} : null
+             subscriptions = await this.subscriptionRepository.findAll();
+               total = await this.subscriptionRepository.countDocs({})
+            };
+
+            let subscriptionEntity = toEntities(subscriptions);
+            if(subscriptionEntity === null) return null;
+
+            let subscriptionData = toDTOs(subscriptionEntity);
+            return subscriptionData ? {subscription: subscriptionData.subscriptions, total: total ?? 0} : null
         } catch (error) {
             throw new Error('something happend in fetchData')
         }
@@ -103,43 +116,60 @@ export class SubscriptionManagement {
 
     async handleListing(subscriptionId: string, query: SearchFilterSortParams): Promise<{subscription: SubscriptionDTO[], total: number}| null> {
         try {
-            console.log('gooiing')
             const subscription = await this.subscriptionRepository.findById(subscriptionId);
-            console.log(subscription)
-            if (subscription) {
+
+            if(subscription === null) return null;
+            const subscriptionEntity = toEntity(subscription);
+
+            if(subscriptionEntity === null) return null;
+            const subsData = toDTO(subscriptionEntity);
+            
+            if (subsData) {
                 const status = !subscription.isListed;
                 const result = await this.subscriptionRepository.listById(subscriptionId, status);
-                console.log('hellosffsfs')
+
                 if (result) {
                     const queryResult = await paramToQuerySubscription(query);
-                    const subscriptionData = await this.subscriptionRepository.findAll(
+                    const subsDocCount = await this.subscriptionRepository.countDocs(queryResult.query);
+                    const subscriptions = await this.subscriptionRepository.findAll(
                         queryResult.query,
                         queryResult.sort,
                         queryResult.skip,
                         queryResult.limit
                     );
-                    return subscriptionData ? {subscription: subscriptionData.subscription, total: subscriptionData.total} : null
+                    let subscriptionEntity = toEntities(subscriptions);
+                    if(subscriptionEntity === null) return null;
+
+                    let subscriptionData = toDTOs(subscriptionEntity);
+
+                    return subscriptionData ? {subscription: subscriptionData.subscriptions, total: subsDocCount ?? 0} : null
                 }
             }
             return null;
         } catch (error) {
             throw new Error('something happend in handleListing')
         }
-
     }
 
     async update(subscriptionId: string, field: string, value: string, query: SearchFilterSortParams): Promise<{subscription: SubscriptionDTO[], total: number}| null> {
         try {
-            const subscription = await this.subscriptionRepository.updateById(subscriptionId, field, value);
+            const updateData = { [field]: parseInt(value) };
+            const subscription = await this.subscriptionRepository.updateById(subscriptionId, updateData);
+
             if (subscription) {
                 const queryResult = await paramToQuerySubscription(query);
-                const subscriptionData = await this.subscriptionRepository.findAll(
+                const subsDocCount = await this.subscriptionRepository.countDocs(queryResult.query);
+                const subscriptions = await this.subscriptionRepository.findAll(
                     queryResult.query,
                     queryResult.sort,
                     queryResult.skip,
                     queryResult.limit
                 );
-                return subscriptionData ? {subscription: subscriptionData.subscription, total: subscriptionData.total} : null            }
+                    let subscriptionEntity = toEntities(subscriptions);
+                    if(subscriptionEntity === null) return null;
+                    let subscriptionData = toDTOs(subscriptionEntity);
+
+                return subscriptionData ? {subscription: subscriptionData.subscriptions, total: subsDocCount ?? 0} : null }
             return null;
         } catch (error) {
             throw new Error('something happend in update')
@@ -149,9 +179,15 @@ export class SubscriptionManagement {
 
     async selectedPlan(subscriptionId: string): Promise<SubscriptionDTO | null> {
         try {
-            const data = await this.subscriptionRepository.findById(subscriptionId);
-            tempUserStore[subscriptionId] = data
-            return data;
+            const subscription = await this.subscriptionRepository.findById(subscriptionId);
+            if(subscription === null) return null;
+            const subscriptionEntity = toEntity(subscription);
+
+            if(subscriptionEntity === null) return null;
+            const subsData = toDTO(subscriptionEntity);
+            tempUserStore[subscriptionId] = subsData
+            return subsData;
+
         } catch (error) {
             throw new Error('something happend in selectedPlan')
         }
@@ -209,7 +245,7 @@ export class SubscriptionManagement {
                 planType,
             });
 
-            await this.cashBack(userId, amount);
+          //  await this.cashBack(userId, amount);
             paymentInProgress[userId] = false;
 
             if (!result) { return null }
@@ -234,7 +270,7 @@ export class SubscriptionManagement {
                 billedAmount: amount ,
                 planType,
             });
-            await this.cashBack(userId, amount);
+          //  await this.cashBack(userId, amount);
 
             if (!result) { return null }
             return result;
@@ -242,7 +278,5 @@ export class SubscriptionManagement {
             throw new Error('something happend in   paymentUsingWallet');
         }
     };
-
-
 
 }

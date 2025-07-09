@@ -12,6 +12,7 @@ import { ChatManagement } from "../../../usecases/usecases/user/ChatUseCase";
 import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
 import { ChatRepository } from "../../../infrastructure/repositories/ChatRepository";
 import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
+import { Geolocation } from "../../../infrastructure/services/Geolocation";
 
 export class UserChatController {
     private commonUseCase: CommonOperations;
@@ -21,8 +22,9 @@ export class UserChatController {
         const userRepository = new UserRepository();
         const chatRepository = new ChatRepository();
         const s3ClientAccessControll = new S3ClientAccessControll()
+        const geolocation = new Geolocation()
         this.chatUseCase = new ChatManagement(chatRepository);
-        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll);
+        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll,geolocation);
     };
 
     fetchMessages = async (req: Request, res: Response, next: NextFunction) => {

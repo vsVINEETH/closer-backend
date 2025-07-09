@@ -12,7 +12,7 @@ import { NotifyUser } from "../../../usecases/usecases/user/NotifyUserUseCase";
 import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
 import { NotificationRepository } from "../../../infrastructure/repositories/NotificationRepository";
 import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
-
+import { Geolocation } from "../../../infrastructure/services/Geolocation";
 
 export class UserInteractionController {
     private commonUseCase: CommonOperations;
@@ -22,7 +22,8 @@ export class UserInteractionController {
         const userRepository = new UserRepository();
         const notificationRepository = new NotificationRepository();
         const s3ClientAccessControll = new S3ClientAccessControll()
-        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll);
+        const geolocation = new Geolocation()
+        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll, geolocation);
         this.notificationUseCase = new NotifyUser(notificationRepository);
     };
 

@@ -5,6 +5,7 @@ import { IToken } from "../../interfaces/IToken";
 import { IOtp } from "../../interfaces/IOtp";
 import { IMailer } from "../../interfaces/IMailer";
 import { tempEmployeeStore } from "../../dtos/CommonDTO";
+import { toDTO, toEntity } from "../../mappers/EmployeeMapper";
 export class Security {
   constructor(
     private employeeRepository: IEmployeeRepository,
@@ -29,10 +30,15 @@ export class Security {
 
   async changePassword(employeeId: string, newPasswordData: passwordDTO): Promise<boolean | null> {
     try {
-      const employee = await this.employeeRepository.findById(employeeId);
-      if (!employee) {
-        return null;
-      }
+      const employeeDoc = await this.employeeRepository.findById(employeeId);
+      
+      if (!employeeDoc)  return null;
+
+      const employeeEntity = toEntity(employeeDoc);
+
+      if(employeeEntity === null) return null;
+
+      const employee = toDTO(employeeEntity);
 
       const result = employee.password
         ? await this.bcrypt.compare(newPasswordData.currentPassword, employee.password)

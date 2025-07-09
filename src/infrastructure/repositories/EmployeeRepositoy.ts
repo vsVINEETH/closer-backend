@@ -8,40 +8,23 @@ import {
 import { EmployeeModel } from "../persistence/models/EmployeeModel";
 import { SortOrder } from "../config/database";
 import { Filter } from "../../../types/express";
-
+import { EmployeeDocument } from "../persistence/interfaces/IEmployeeModel";
 
 export class EmployeeRepository implements IEmployeeRepository {
     
-  async findByEmail(email: string): Promise<EmployeeAccessDTO | null> {
+  async findByEmail(email: string): Promise<EmployeeDocument | null> {
     try {
       const employee = await EmployeeModel.findOne({ email });
-      return employee
-        ? {
-            id: employee.id,
-            name: employee.name,
-            email: employee.email,
-            isBlocked: employee.isBlocked,
-            password: employee.password,
-          }
-        : null;
+      return employee;
     } catch (error) {
       throw new Error("something happend in findByEmail");
     }
-  }
+  };
 
-  async findById(employeeId: string): Promise<EmployeeAccessDTO | null> {
+  async findById(employeeId: string): Promise<EmployeeDocument | null> {
     try {
       const employee = await EmployeeModel.findById(employeeId);
-      return employee
-        ? {
-            id: employee.id,
-            name: employee.name,
-            email: employee.email,
-            password: employee.password,
-            isBlocked: employee.isBlocked,
-            createdAt: employee.createdAt.toLocaleDateString(),
-          }
-        : null;
+      return employee;
     } catch (error) {
       throw new Error("somethign happend in findById");
     }
@@ -52,41 +35,31 @@ export class EmployeeRepository implements IEmployeeRepository {
     sort: { [key: string]: SortOrder } = {},
     skip: number = 0,
     limit: number = 0
-  ): Promise<{ employee: Employee[]; total: number } | null> {
+  ): Promise< EmployeeDocument[] | null> {
     try {
-      const employee = await EmployeeModel.find(query)
+      const employeeDoc = await EmployeeModel.find(query)
         .sort(sort)
         .skip(skip)
         .limit(limit);
-
-      const emp = employee.map(
-        (emp) =>
-          new Employee(
-            emp.id,
-            emp.name,
-            emp.email,
-            emp.password,
-            emp.isBlocked,
-            emp.createdAt.toLocaleDateString()
-          )
-      );
-
-      const total = await EmployeeModel.countDocuments(query);
-      return { employee: emp, total: total };
+        return employeeDoc;
     } catch (error) {
       throw new Error("something happend in findAll");
     }
   };
 
+  async countDocs<T>(query: Record<string, T> = {}): Promise<number> {
+    try {
+      const totalDocs = await EmployeeModel.countDocuments(query);
+      return totalDocs;
+    } catch (error) {
+      throw new Error("something happend in countDocs");
+    }
+  };
+
+
   async create(employeeData: EmployeeCreate): Promise<void> {
     try {
-      const newEmployee = new EmployeeModel({
-        name: employeeData.name,
-        email: employeeData.email,
-        password: employeeData.password,
-        isBlocked: false,
-      });
-
+      const newEmployee = new EmployeeModel(employeeData);
       await newEmployee.save();
     } catch (error) {
       throw new Error("something happend in create");
@@ -100,6 +73,7 @@ export class EmployeeRepository implements IEmployeeRepository {
         { isBlocked: status },
         { new: true }
       );
+
       if (employees) {
         return true;
       }
@@ -117,9 +91,7 @@ export class EmployeeRepository implements IEmployeeRepository {
         { password: newPassword },
         { new: true }
       );
-      // if (employee) {
-      //   return true;
-      // }
+
       return employee ? true : null;
     } catch (error) {
       throw new Error("something happend in update password");

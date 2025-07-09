@@ -1,7 +1,7 @@
 export interface SubscriptionDTO {
     id?: string,
     planType?:string,
-    price?: string,
+    price?: number,
     isListed?:boolean,
     createdAt?: string
 }

@@ -24,27 +24,27 @@ router.delete('/logout', tokenAuth([ADMIN]), adminAuthController.logout);
 // router.post('/create_employee', tokenAuth([ADMIN]), employeeManagementController.createEmployee);
 // router.post('/block_employee', tokenAuth([ADMIN]), employeeManagementController.blockEmployee);
 
-router.get('/employees', tokenAuth([ADMIN]), employeeManagementController.fetchEmployeesData);// new
-router.post('/employees', tokenAuth([ADMIN]), employeeManagementController.createEmployee);// new 
-router.patch('/employees', tokenAuth([ADMIN]), employeeManagementController.blockEmployee);// new 
+router.get('/employees', tokenAuth([ADMIN]), employeeManagementController.fetchEmployeesData);
+router.post('/employees', tokenAuth([ADMIN]), employeeManagementController.createEmployee);
+router.patch('/employees', tokenAuth([ADMIN]), employeeManagementController.blockEmployee);
 
 // router.get('/user_data', tokenAuth([ADMIN]), userManagementController.fetchUsersData);
 // router.post('/block_user', tokenAuth([ADMIN]), userManagementController.blockUser);
 // router.patch('/ban_user', tokenAuth([ADMIN]), userManagementController.banUser);
 // router.patch('/unban_user', tokenAuth([ADMIN]), userManagementController.unBanUser);
 
-router.get('/users', tokenAuth([ADMIN]), userManagementController.fetchUsersData);//new
-router.patch('/users', tokenAuth([ADMIN]), userManagementController.blockUser);//new
-router.patch('/users/ban', tokenAuth([ADMIN]), userManagementController.banUser);//new
-router.patch('/users/unban', tokenAuth([ADMIN]), userManagementController.unBanUser);//new
+router.get('/users', tokenAuth([ADMIN]), userManagementController.fetchUsersData);
+router.patch('/users', tokenAuth([ADMIN]), userManagementController.blockUser);
+router.patch('/users/ban', tokenAuth([ADMIN]), userManagementController.banUser);
+router.patch('/users/unban', tokenAuth([ADMIN]), userManagementController.unBanUser);
 
 // router.get('/subscription_data', tokenAuth([ADMIN]), subscriptionManagementController.fetchSubscriptionData);
 // router.post('/list_subscription', tokenAuth([ADMIN]), subscriptionManagementController.handleSubscriptionListing);
 // router.patch('/update_subscription', tokenAuth([ADMIN]), subscriptionManagementController.updateSubscription);
 
-router.get('/subscriptions', tokenAuth([ADMIN]), subscriptionManagementController.fetchSubscriptionData);//new
-router.post('/subscriptions', tokenAuth([ADMIN]), subscriptionManagementController.handleSubscriptionListing);//new
-router.patch('/subscriptions', tokenAuth([ADMIN]), subscriptionManagementController.updateSubscription);//new
+router.get('/subscriptions', tokenAuth([ADMIN]), subscriptionManagementController.fetchSubscriptionData);
+router.post('/subscriptions', tokenAuth([ADMIN]), subscriptionManagementController.handleSubscriptionListing);
+router.patch('/subscriptions', tokenAuth([ADMIN]), subscriptionManagementController.updateSubscription);
 
 // router.get('/advertisement', tokenAuth([ADMIN,USER]), advertisementManagementController.fetchAdvertisementData);
 // router.post('/advertisement', tokenAuth([ADMIN]), uploads, advertisementManagementController.createAdvertisement);
@@ -52,7 +52,7 @@ router.patch('/subscriptions', tokenAuth([ADMIN]), subscriptionManagementControl
 // router.patch('/list_advertisement', tokenAuth([ADMIN]), advertisementManagementController.advertisementListing);
 // router.delete('/advertisement', tokenAuth([ADMIN]),  advertisementManagementController.removeAdvertisement);
 
-router.get('/advertisements', tokenAuth([ADMIN, USER]), advertisementManagementController.fetchAdvertisementData);//new
+router.get('/advertisements', tokenAuth([ADMIN, USER]), advertisementManagementController.fetchAdvertisementData);
 router.post('/advertisements', tokenAuth([ADMIN]), uploads, advertisementManagementController.createAdvertisement);
 router.patch('/advertisements', tokenAuth([ADMIN]), advertisementManagementController.updateAdvertisement);
 router.patch('/advertisements/listing', tokenAuth([ADMIN]), advertisementManagementController.advertisementListing);

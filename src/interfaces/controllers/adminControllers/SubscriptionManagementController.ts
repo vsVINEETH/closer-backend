@@ -63,7 +63,7 @@ export class SubscriptionManagementController {
 
     updateSubscription = async (req: Request, res: Response, next: NextFunction) => {
         try {
-           const subscriptionId = req.body._id;
+           const subscriptionId = req.body.id;
            const subscriptionPrice = req.body.price;
            const filterOptions = await paramsNormalizer(req.query)
            const field = Object.keys(req.body).find(key => key === 'price')

@@ -16,4 +16,5 @@ export interface EventDocument extends Document {
        slotsBooked: number,
        totalPaid: number,
      }[],
+     createdAt: string,
 }

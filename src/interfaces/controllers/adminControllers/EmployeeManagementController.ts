@@ -37,7 +37,7 @@ export class EmployeeManagementController {
             if (employeeData) {
                 res.status(HttpStatus.OK).json(employeeData);
                 return
-            }
+            };
             res.status(HttpStatus.NO_CONTENT).json({ message: ResponseMessages.NO_CONTENT_OR_DATA});
             return;
         } catch (error) {

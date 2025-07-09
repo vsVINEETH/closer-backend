@@ -16,7 +16,7 @@ import { Mailer } from "../../../infrastructure/services/Mailer";
 import { Bcrypt } from "../../../infrastructure/services/Bcrypt";
 import { OTP } from "../../../infrastructure/services/Otp";
 import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
-
+import { Geolocation } from "../../../infrastructure/services/Geolocation";
 
 export class UserManagementController {
     private securityUseCase: Security;
@@ -28,8 +28,9 @@ export class UserManagementController {
         const otp = new OTP();
         const userRepository = new UserRepository();
         const s3ClientAccessControll = new S3ClientAccessControll()
+        const geolocation = new Geolocation()
         this.securityUseCase = new Security(userRepository, bcrypt, otp, mailer, s3ClientAccessControll);
-        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll);
+        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll, geolocation);
     };
 
     blockUser = async(req: Request, res:Response, next: NextFunction) => {

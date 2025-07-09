@@ -2,6 +2,7 @@ import { Filter } from "../../../types/express/index";
 import { ISalesRepository } from "../../domain/repositories/ISalesRepository";
 import { EventSales, SalesDTO, SalesReport } from "../../usecases/dtos/SalesDTO";
 import { IS3Client } from "../interfaces/IS3Client";
+// import { toDTO } from "../mappers/SalesMapper";
 
 export class SalesManagement {
     constructor(
@@ -20,11 +21,15 @@ export class SalesManagement {
     async getDashboarData(filterConstraints: Filter): Promise<SalesReport | null> {
         try {
            const  dashboardData = await this.salesRepository.dashboardData(filterConstraints);
+        //    if(dashboardDoc === null) return null;
+           
+        //    const dashboardData = toDTO(dashboardDoc);
+        //    console.log(dashboardData);
            return dashboardData ? dashboardData : null;
         } catch (error) {
             throw new Error('Something happend in getDashboardData');
         }
-    }
+    };
 
     async getBookedEvents(userId: string): Promise<EventSales[]> {
         try {
