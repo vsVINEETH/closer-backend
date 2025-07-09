@@ -13,7 +13,6 @@ export class EmployeeManagement {
         private mailer: IMailer
     ) { }
 
-
     async fetchData(options: SearchFilterSortParams): Promise<{ employee: EmployeeAccessDTO[]; total: number } | null> {
         try {
            
