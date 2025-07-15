@@ -3,28 +3,18 @@ import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 
-//useCase's
-import { CommonOperations } from "../../../usecases/usecases/user/CommonUseCase";
-
-//repositories
-import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
-import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
-import { Geolocation } from "../../../infrastructure/services/Geolocation";
+import { commonUserUseCase } from "../../../di/user.di";
 
 export class ProfileControll {
-    private commonUseCase: CommonOperations;
 
-    constructor(){
-        const userRepository = new UserRepository();
-        const s3ClientAccessControll = new S3ClientAccessControll()
-        const geolocation = new Geolocation()
-        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll, geolocation);
-    };
+    constructor(
+      private _commonUseCase = commonUserUseCase
+    ){};
 
     profile = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userId = req.query.id as string || "";
-        const result = await this.commonUseCase.profile(userId);
+        const result = await this._commonUseCase.profile(userId);
       
         if(result){
           res.status(HttpStatus.OK).json(result);
@@ -41,7 +31,7 @@ export class ProfileControll {
       try {
         const { field, value } = req.body;
         const userId = req.query.id as string || "";
-        const result = await this.commonUseCase.updateProfile(field, value, userId);
+        const result = await this._commonUseCase.updateProfile(field, value, userId);
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);
           return
@@ -56,9 +46,9 @@ export class ProfileControll {
     updateProfileImageURLs = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userId = req.query.userId as string;
-        const result = await this.commonUseCase.updateProfileImageURL(userId);
+        const result = await this._commonUseCase.updateProfileImageURL(userId);
         if(result){
-          res.status(200).json(result);
+          res.status(HttpStatus.OK).json(result);
           return;
         };
         res.status(HttpStatus.FORBIDDEN).json({message: ResponseMessages.FAILED_TO_UPDATE});
@@ -73,7 +63,7 @@ export class ProfileControll {
  
         const userId = req.body.id;
         const imageSource = req.body.src;
-        const result = await this.commonUseCase.removeImage(userId, imageSource);
+        const result = await this._commonUseCase.removeImage(userId, imageSource);
         if(result){
           res.status(HttpStatus.OK).json(result);
           return
@@ -93,7 +83,7 @@ export class ProfileControll {
          : [];
         
        // const image = imageFiles.map((file) => file.location);
-        const result = await this.commonUseCase.addImage(userId, imageFiles)
+        const result = await this._commonUseCase.addImage(userId, imageFiles)
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);
           return
@@ -108,7 +98,7 @@ export class ProfileControll {
     changeProfileImage = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const {imageIndex, userId} = req.body;
-        const result = await this.commonUseCase.changeProfileImage(imageIndex, userId);
+        const result = await this._commonUseCase.changeProfileImage(imageIndex, userId);
         if(result){
           res.status(HttpStatus.OK).json({message: ResponseMessages.UPDATED_SUCCESSFULLY});
           return;

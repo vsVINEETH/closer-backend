@@ -2,30 +2,21 @@ import { Request, Response, NextFunction } from "express";
 
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
-//useCase's
-import { AdvertisementManagement } from "../../../usecases/usecases/admin/AdvertisementUseCase";
-
-//repositries
-import { AdvertisementRepository } from "../../../infrastructure/repositories/AdvertisementRepository";
 import { paramsNormalizer } from "../../utils/filterNormalizer";
-import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
+
+import { advertisementUseCase } from "../../../di/general.di";
 
 export class UserAdvertisementController {
-    private adsUseCase: AdvertisementManagement;
-
-    constructor(){
-        const advertisementRepository = new AdvertisementRepository();
-        const s3ClientAccessControll = new S3ClientAccessControll();
-        this.adsUseCase = new AdvertisementManagement(advertisementRepository, s3ClientAccessControll);
-    };
+    constructor(
+      private _adsUseCase = advertisementUseCase
+    ){}
 
     fetchAds = async (req: Request, res: Response, next: NextFunction) => {
       try {
          const filterOptions = await paramsNormalizer(req.query);
-         const result = await this.adsUseCase.fetchData(filterOptions);
+         const result = await this._adsUseCase.fetchData(filterOptions);
          if(result){
-          res.status(201).json(result);
+          res.status(HttpStatus.OK).json(result);
           return;
          }
          res.status(HttpStatus.NO_CONTENT).json({message: ResponseMessages.NO_CONTENT_OR_DATA});

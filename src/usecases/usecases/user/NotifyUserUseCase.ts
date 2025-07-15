@@ -4,12 +4,12 @@ import { INotificationRepository } from "../../../domain/repositories/INotificat
 
 export class NotifyUser {
     constructor(
-        private notificationRepository: INotificationRepository,
+        private _notificationRepository: INotificationRepository,
     ) { }
 
     async execute(notification: Notification): Promise<void> {
         try {
-            await this.notificationRepository.create(notification)
+            await this._notificationRepository.create(notification)
             console.log(`Sending notification to user ${notification.user}: ${notification.message}`);
         } catch (error) {
             throw new Error('something happend in execute')
@@ -19,7 +19,7 @@ export class NotifyUser {
 
     async fetchData(userId: string): Promise<NotificationDTO[] | null> {
         try {
-            const result = await this.notificationRepository.findAll(userId);
+            const result = await this._notificationRepository.findAll(userId);
             if (!result) { return null };
             return result;
         } catch (error) {
@@ -30,7 +30,7 @@ export class NotifyUser {
 
     async removeNotification(notificationId: string): Promise<boolean> {
         try {
-            const result = await this.notificationRepository.findByIdDelete(notificationId);
+            const result = await this._notificationRepository.findByIdDelete(notificationId);
             return result !== null;
         } catch (error) {
             throw new Error('something happend in removeNotification')

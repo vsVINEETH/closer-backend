@@ -1,4 +1,76 @@
 import { Types } from "../../../types/express";
+import { Content } from "../../domain/entities/Content";
+
+export type TotalContent = {
+      content: string,
+      createdAt: string,
+      downvotes: string[]
+      image: string[] | File[],
+      isListed: boolean,
+      shares: string[]
+      subtitle: string,
+      title: string,
+      upvotes: string[],
+};
+
+export type MostLiked = {
+      title: string,
+      subtitle: string,
+      content: string,
+      image: string[] | File[],
+      upvotesCount: number,
+      createdAt: string
+};
+
+export type MostShared = {
+      title: string,
+      subtitle: string,
+      content: string,
+      image: string[] | File[],
+      sharesCount: number,
+      createdAt: string,
+};
+
+export type RecentContent = {
+      content: string,
+      createdAt: string,
+      downvotes: string[]
+      image: string[],
+      isListed: boolean,
+      shares: string[]
+      subtitle: string,
+      title: string,
+      updatedAt: string,
+      upvotes: string[]
+};
+
+export type TrendingContent = {
+      content: string,
+      createdAt: string,
+      downvotes: string[]
+      image: string[],
+      isListed: boolean,
+      shares: string[]
+      subtitle: string,
+      title: string,
+      updatedAt: string,
+      upvotes: string[]
+};
+
+export type PopularCategory = {
+      _id: string,
+      totalInteraction: number,
+};
+
+
+export type EmployeeDashboardDTO = {
+      totalContent: TotalContent[],
+      mostLiked: MostLiked[],
+      mostShared: MostShared[],
+      recentContent: RecentContent[],
+      trendingContents: TrendingContent[],
+      popularCategory: PopularCategory[]
+};
 
 
 export interface DashboardData {
@@ -14,7 +86,6 @@ export interface DashboardData {
       updatedAt: string,
       upvotes: string[]
       _id: string,
-  
     }[],
   
     mostLiked: [{

@@ -8,11 +8,11 @@ import { tempUserStore } from "../../dtos/CommonDTO";
 import { IS3Client } from "../../interfaces/IS3Client";
 export class Security {
     constructor(
-        private userRepository: IUserRepository,
-        private bcrypt: IBcrypt,
-        private OTP: IOtp,
-        private mailer: IMailer,
-        private s3: IS3Client,
+        private _userRepository: IUserRepository,
+        private _bcrypt: IBcrypt,
+        private _OTP: IOtp,
+        private _mailer: IMailer,
+        private _s3: IS3Client,
     ){}
 
     otpExpireation(email: string){
@@ -30,7 +30,7 @@ export class Security {
     };
 
 
-    private  objectFormatter = async (userPreferences: Preferences): Promise<Preferences> => {
+    private  _objectFormatter = async (userPreferences: Preferences): Promise<Preferences> => {
         try {
 
             let ageRange;
@@ -55,15 +55,15 @@ export class Security {
 
     async changePassword(userId: string, newPasswordData: passwordDTO): Promise<boolean | null> {
         try {
-            const user = await this.userRepository.findById(userId);
+            const user = await this._userRepository.findById(userId);
     
             if (!user) { return null};
     
-            const result = user.password ? await this.bcrypt.compare(newPasswordData.currentPassword, user.password): false;
+            const result = user.password ? await this._bcrypt.compare(newPasswordData.currentPassword, user.password): false;
     
             if(result) {
-                const hashedPassword = await this.bcrypt.Encrypt(newPasswordData.newPassword);
-                await this.userRepository.updatePassword(userId, hashedPassword);
+                const hashedPassword = await this._bcrypt.Encrypt(newPasswordData.newPassword);
+                await this._userRepository.updatePassword(userId, hashedPassword);
                 return true
             }
     
@@ -76,10 +76,10 @@ export class Security {
 
     async blockUser(blockedId: string, userId:string, userPreferences: Preferences): Promise<UserDTO[] | null> {
         try {
-            const result = await this.userRepository.blockUserById(blockedId, userId);
+            const result = await this._userRepository.blockUserById(blockedId, userId);
             if(result){
-                userPreferences = await this.objectFormatter(userPreferences);
-               const users = await this.userRepository.findMatches(userPreferences);
+                userPreferences = await this._objectFormatter(userPreferences);
+               const users = await this._userRepository.findMatches(userPreferences);
                return users
             }
             return null; 
@@ -91,15 +91,15 @@ export class Security {
 
     async blockList(userId: string): Promise<UserDTO[] | null> {
         try {
-            const user = await this.userRepository.findById(userId);
+            const user = await this._userRepository.findById(userId);
             if (user){
-                const result = await this.userRepository.findBlocked(userId, user);
+                const result = await this._userRepository.findBlocked(userId, user);
                 if (result) {
                     await Promise.all(
                         result.map(async (doc) => {
                             if (doc.image) {
                                 doc.image = await Promise.all(
-                                    doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                                    doc.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                                 );
                             }
                         })
@@ -117,10 +117,10 @@ export class Security {
 
     async unblockUser(unblockId: string, userId: string): Promise<UserDTO[] | null> {
         try {
-            const result = await this.userRepository.unblockById(unblockId, userId);
-            const user = await this.userRepository.findById(userId)
+            const result = await this._userRepository.unblockById(unblockId, userId);
+            const user = await this._userRepository.findById(userId)
             if(result && user){
-                const result = await this.userRepository.findBlocked(userId, user);
+                const result = await this._userRepository.findBlocked(userId, user);
                 return result ? result : [];
             }
             return null;  
@@ -132,10 +132,10 @@ export class Security {
 
     async reportUser(reportedId: string, userId: string, userPreferences: Preferences): Promise<UserDTO[] | null> {
         try {
-            const result = await this.userRepository.reportUseById(reportedId, userId);
+            const result = await this._userRepository.reportUseById(reportedId, userId);
             if(result){
-                userPreferences = await this.objectFormatter(userPreferences);
-                const users = await this.userRepository.findMatches(userPreferences);
+                userPreferences = await this._objectFormatter(userPreferences);
+                const users = await this._userRepository.findMatches(userPreferences);
                 return users;
             }
             return null;   
@@ -147,13 +147,13 @@ export class Security {
 
     async forgotPassword(forgotPasswordData: forgotPasswordDTO): Promise<boolean| null> {
         try {
-            const result = await this.userRepository.findByEmail(forgotPasswordData.email);
+            const result = await this._userRepository.findByEmail(forgotPasswordData.email);
             if(result){
-                const OTP = this.OTP.GenerateOTP();
+                const OTP = this._OTP.GenerateOTP();
                 console.log(OTP);
-                const password = await this.bcrypt.Encrypt(forgotPasswordData.newPassword);
-                const htmlOTP = this.mailer.generateOtpEmailContent(OTP);
-                this.mailer.SendEmail(forgotPasswordData.email, 'One Time Password', htmlOTP);
+                const password = await this._bcrypt.Encrypt(forgotPasswordData.newPassword);
+                const htmlOTP = this._mailer.generateOtpEmailContent(OTP);
+                this._mailer.SendEmail(forgotPasswordData.email, 'One Time Password', htmlOTP);
     
                 tempUserStore[forgotPasswordData.email] = {
                     id: result.id,
@@ -173,9 +173,9 @@ export class Security {
 
     async verifyOTP(otpData: OtpDTO): Promise<boolean | null> {
         try {
-            const result = this.OTP.ValidateOTP(otpData.otp.join("") ,tempUserStore[otpData.email].otp);
+            const result = this._OTP.ValidateOTP(otpData.otp.join("") ,tempUserStore[otpData.email].otp);
             if(result){
-              await this.userRepository.updatePassword(tempUserStore[otpData.email].id, tempUserStore[otpData.email].password)
+              await this._userRepository.updatePassword(tempUserStore[otpData.email].id, tempUserStore[otpData.email].password)
               delete tempUserStore[otpData.email];
               return true
             }
@@ -191,12 +191,12 @@ export class Security {
             const userData = tempUserStore[email];
             if(!userData){return null};
     
-            const newOTP = this.OTP.GenerateOTP();
+            const newOTP = this._OTP.GenerateOTP();
             tempUserStore[email].otp = newOTP;
             console.log(newOTP);
     
-            const htmlOTP = this.mailer.generateOtpEmailContent(newOTP);
-            this.mailer.SendEmail(email, 'One Time Password', htmlOTP);
+            const htmlOTP = this._mailer.generateOtpEmailContent(newOTP);
+            this._mailer.SendEmail(email, 'One Time Password', htmlOTP);
             this.otpExpireation(email);
             return true  
         } catch (error) {

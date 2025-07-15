@@ -2,6 +2,8 @@ export interface EmployeeDTO {
     id: string;
     name: string;
     email: string;
+    isBlocked: boolean;
+    createdAt?: string,
 }
 
 export interface EmployeeStats  {
@@ -13,7 +15,7 @@ export interface EmployeeCreate {
     id?:string;
     name: string;
     email: string;
-    password?: string;
+    password: string;
     isBlocked?: boolean;
 }
 

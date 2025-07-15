@@ -2,6 +2,7 @@ import { IWalletRepository } from "../../domain/repositories/IWalletRepository";
 import WalletModel from "../persistence/models/WalletModel";
 import { WalletDTO } from "../../usecases/dtos/WalletDTO";
 import { IWallet } from "../persistence/interfaces/IWalletModel";
+
 export class WalletRepository implements IWalletRepository {
 
   async findById(userId: string): Promise<IWallet | null> {

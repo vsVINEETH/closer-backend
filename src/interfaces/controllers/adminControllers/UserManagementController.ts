@@ -3,26 +3,19 @@ import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 
-//useCase's
-import { UserManagement } from "../../../usecases/usecases/admin/UserMgntUseCase";
-
-//repositories
-import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
 import { paramsNormalizer } from "../../utils/filterNormalizer";
 
-export class UserManagementController {
-    private userMgntUseCase: UserManagement;
+import { userManagementUseCase } from "../../../di/admin.di";
 
-    constructor(){
-        const userRepository = new UserRepository();
-        
-        this.userMgntUseCase = new UserManagement(userRepository);
-    };
+export class UserManagementController {
+    constructor(
+        private _userMgntUseCase = userManagementUseCase 
+    ){};
 
     fetchUsersData = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const filterOptions = await paramsNormalizer(req.query)
-            const usersData = await this.userMgntUseCase.fetchData(filterOptions);
+            const usersData = await this._userMgntUseCase.fetchData(filterOptions);
             if (usersData) {
                 res.status(HttpStatus.OK).json(usersData);
                 return
@@ -38,7 +31,7 @@ export class UserManagementController {
         try {
             const userId = req.body.id;
             const filterOptions = await paramsNormalizer(req.query)
-            const updatedData = await this.userMgntUseCase.blockUser(userId, filterOptions);
+            const updatedData = await this._userMgntUseCase.blockUser(userId, filterOptions);
     
             if (updatedData) {
                 res.status(HttpStatus.OK).json(updatedData);
@@ -57,7 +50,7 @@ export class UserManagementController {
             const userId = req.body.id;
             const banDuration = req.body.duration;
             const filterOptions = await paramsNormalizer(req.query)
-            const result = await this.userMgntUseCase.banUser(userId, banDuration, filterOptions);
+            const result = await this._userMgntUseCase.banUser(userId, banDuration, filterOptions);
             if(result){
                 res.status(200).json(result);
                 return
@@ -74,7 +67,7 @@ export class UserManagementController {
         try {
            const userId = req.body.id;
            const filterOptions = await paramsNormalizer(req.query)
-            const result = await this.userMgntUseCase.unBanUser(userId, filterOptions);
+            const result = await this._userMgntUseCase.unBanUser(userId, filterOptions);
             if(result){
                 res.status(HttpStatus.OK).json(result);
                 return

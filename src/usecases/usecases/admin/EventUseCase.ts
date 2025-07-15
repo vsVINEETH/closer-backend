@@ -1,12 +1,11 @@
 import { IEventRepository } from "../../../domain/repositories/IEventRepository";
-import { EventDTO, EditEventDTO, UpcomingEventCount, BookingDetails } from "../../dtos/EventDTO";
+import { EventDTO, UpcomingEventCount, BookingDetails } from "../../dtos/EventDTO";
 import { Event } from "../../../domain/entities/Event";
 import { IMailer } from "../../interfaces/IMailer";
 import { IUserRepository } from "../../../domain/repositories/IUserRepository";
 import { IRazorpay } from "../../interfaces/IRazorpay";
-import { WalletDTO } from "../../dtos/WalletDTO";
 import { ISalesRepository } from "../../../domain/repositories/ISalesRepository";
-import { ClientQuery, Filter } from "../../../../types/express/index";
+import { Filter } from "../../../../types/express/index";
 import { SearchFilterSortParams } from "../../dtos/CommonDTO";
 import { RazorpayEventPayment } from "../../dtos/EventDTO";
 import { paramToQueryEvent } from "../../../interfaces/utils/paramToQuery";
@@ -23,16 +22,16 @@ const paymentInProgress: { [key: string]: boolean } = {};
 
 export class EventManagement {
     constructor(
-        private eventRepository: IEventRepository,
-        private mailer: IMailer,
-        private userRepository: IUserRepository,
-        private razorpay: IRazorpay,
-        private salesRepository: ISalesRepository,
-        private s3: IS3Client
+        private _eventRepository: IEventRepository,
+        private _mailer: IMailer,
+        private _userRepository: IUserRepository,
+        private _razorpay: IRazorpay,
+        private _salesRepository: ISalesRepository,
+        private _s3: IS3Client
     ){};
 
     private async slotCalculation(eventId: string, bookedPrice: number, userId: string, bookedSlots: number): Promise<EventDTO | null>{
-        const eventDoc = await this.eventRepository.findById(eventId);
+        const eventDoc = await this._eventRepository.findById(eventId);
         if(eventDoc === null) return null;
         const eventEntity = toEntity(eventDoc);
 
@@ -65,13 +64,13 @@ export class EventManagement {
 
     private async notifyPrimeUsers(evetData: EventDTO): Promise<void> {
         try {
-            const users = await this.userRepository.findAll({ "prime.isPrime": true });
+            const users = await this._userRepository.findAll({ "prime.isPrime": true });
             if(!users){ return };
 
-            const htmlContent = this.mailer.generateNewEventNotifyEmail(evetData);
+            const htmlContent = this._mailer.generateNewEventNotifyEmail(evetData);
              users.users.forEach( async (user) => {
                 try{
-                    await this.mailer.SendEmail(
+                    await this._mailer.SendEmail(
                         user.email,
                         `New Event ${evetData.title}`,
                         htmlContent
@@ -88,7 +87,7 @@ export class EventManagement {
 
     private async notifySlotHolders(eventId: string, userId: string): Promise<void> {
         try {
-            const event = await this.eventRepository.findById(eventId);
+            const event = await this._eventRepository.findById(eventId);
 
             if(event === null) return;
 
@@ -97,10 +96,10 @@ export class EventManagement {
 
             const eventData = toDTO(eventEntity)
 
-            const user = await this.userRepository.findById(userId);
-            const htmlContent = this.mailer.generateEventReceiptEmail(eventData);
+            const user = await this._userRepository.findById(userId);
+            const htmlContent = this._mailer.generateEventReceiptEmail(eventData);
             if(user?.email)
-            await this.mailer.SendEmail(
+            await this._mailer.SendEmail(
                 user.email,
                 `Tickets are here`,
                 htmlContent
@@ -114,13 +113,13 @@ export class EventManagement {
     async fetchEvents(options: SearchFilterSortParams): Promise< {events: Event[], total: number} | null> {
         try {
             const queryResult = await paramToQueryEvent(options)
-            const events = await this.eventRepository.findAll(
+            const events = await this._eventRepository.findAll(
                  queryResult.query,
                  queryResult.sort,
                  queryResult.skip,
                  queryResult.limit
             );
-            const eventsDocCount = await this.eventRepository.countDocs(queryResult.query)
+            const eventsDocCount = await this._eventRepository.countDocs(queryResult.query)
             const eventEntity = toEntities(events);
             if(eventEntity === null) return null;
 
@@ -129,7 +128,7 @@ export class EventManagement {
                 await Promise.all(
                     eventData.events.map(async (doc) => {
                         doc.image = await Promise.all(
-                            doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                            doc.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                         );
                     })
                 );
@@ -143,7 +142,7 @@ export class EventManagement {
 
     async fetchEvent(eventId: string): Promise<EventDTO | null> {
         try {
-            const event = await this.eventRepository.findById(eventId);
+            const event = await this._eventRepository.findById(eventId);
 
             if(event === null) return null;
             const eventEntity = toEntity(event);
@@ -153,7 +152,7 @@ export class EventManagement {
 
             if(eventData){
                 eventData.image = await Promise.all(
-                    eventData.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                    eventData.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                 );
                 return eventData;
             }
@@ -167,7 +166,7 @@ export class EventManagement {
         try {
             const image: string[] = [];
             for(let post of imageFiles){
-               const fileName = await this.s3.uploadToS3(post);
+               const fileName = await this._s3.uploadToS3(post);
                image.push(fileName);
             };
 
@@ -183,16 +182,16 @@ export class EventManagement {
             };
             
 
-           const result = await this.eventRepository.create({...newEvent, image});
+           const result = await this._eventRepository.create({...newEvent, image});
             if(!result ){ return null };
             const queryResult = await paramToQueryEvent(query)
-            const events = await this.eventRepository.findAll(
+            const events = await this._eventRepository.findAll(
                  queryResult.query,
                  queryResult.sort,
                  queryResult.skip,
                  queryResult.limit
             );
-            const eventsDocCount = await this.eventRepository.countDocs(queryResult.query)
+            const eventsDocCount = await this._eventRepository.countDocs(queryResult.query)
             const eventEntity = toEntities(events);
             if(eventEntity === null) return null;
 
@@ -201,7 +200,7 @@ export class EventManagement {
                 await Promise.all(
                     eventDocs.events.map(async (doc) => {
                         doc.image = await Promise.all(
-                            doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                            doc.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                         );
                     })
                 );
@@ -227,16 +226,16 @@ export class EventManagement {
                 price: Number(updatedEventData.price),
             };
 
-            const result = await this.eventRepository.update(updatedEventData.id, latestData);
+            const result = await this._eventRepository.update(updatedEventData.id, latestData);
             if(!result) {return null};
             const queryResult = await paramToQueryEvent(query)
-            const events = await this.eventRepository.findAll(
+            const events = await this._eventRepository.findAll(
                  queryResult.query,
                  queryResult.sort,
                  queryResult.skip,
                  queryResult.limit
             );
-            const eventsDocCount = await this.eventRepository.countDocs(queryResult.query)
+            const eventsDocCount = await this._eventRepository.countDocs(queryResult.query)
             const eventEntity = toEntities(events);
             if(eventEntity === null) return null;
 
@@ -246,7 +245,7 @@ export class EventManagement {
                 await Promise.all(
                     eventDocs.events.map(async (doc) => {
                         doc.image = await Promise.all(
-                            doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                            doc.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                         );
                     })
                 );
@@ -260,7 +259,7 @@ export class EventManagement {
 
     async deleteEvent(eventId: string, query: SearchFilterSortParams): Promise< {events: Event[], total: number}| null> {
         try {
-            const event = await this.eventRepository.findById(eventId)
+            const event = await this._eventRepository.findById(eventId)
 
             if(event === null) return null;
             const eventEntity = toEntity(event);
@@ -270,22 +269,22 @@ export class EventManagement {
            
             if (eventData) {
                 await Promise.all(
-                    eventData.image.map(async (val) => await this.s3.deleteFromS3(val as string))
+                    eventData.image.map(async (val) => await this._s3.deleteFromS3(val as string))
                 );
                 eventData.image = [];
             };
-            const result = await this.eventRepository.deleteById(eventId);
+            const result = await this._eventRepository.deleteById(eventId);
             if(!result){return null}
 
             const queryResult = await paramToQueryEvent(query)
-            const events = await this.eventRepository.findAll(
+            const events = await this._eventRepository.findAll(
                  queryResult.query,
                  queryResult.sort,
                  queryResult.skip,
                  queryResult.limit
             );
 
-            const eventsDocCount = await this.eventRepository.countDocs(queryResult.query)
+            const eventsDocCount = await this._eventRepository.countDocs(queryResult.query)
             const eventEntities = toEntities(events);
             if(eventEntities === null) return null;
 
@@ -295,7 +294,7 @@ export class EventManagement {
                 await Promise.all(
                     eventDocs.events.map(async (doc) => {
                         doc.image = await Promise.all(
-                            doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                            doc.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                         );
                     })
                 );
@@ -310,7 +309,7 @@ export class EventManagement {
 
    async dashboardData(filterConstraints: Filter): Promise<UpcomingEventCount[] | null> {
     try {
-       const result = await this.eventRepository.dashboardData(filterConstraints);
+       const result = await this._eventRepository.dashboardData(filterConstraints);
        if(!result){return null}
         return result;
     } catch (error) {
@@ -322,7 +321,7 @@ export class EventManagement {
     const { amount, currency, userId, eventId, slots } = orderData;
     try {
 
-        const event = await this.eventRepository.findById(eventId);
+        const event = await this._eventRepository.findById(eventId);
         if(event === null) return null;
         const eventEntity = toEntity(event);
 
@@ -337,7 +336,7 @@ export class EventManagement {
             return false
         }
         paymentInProgress[userId] = true
-        return await this.razorpay.createOrder(amount, currency);
+        return await this._razorpay.createOrder(amount, currency);
     } catch (error) {
         throw new Error('something happend in createOrder')
     }
@@ -358,7 +357,7 @@ export class EventManagement {
     async verifyPayment(paymentData: RazorpayEventPayment ): Promise<boolean> {
         try {
             const { razorpay_order_id, razorpay_payment_id, razorpay_signature, userId, amount, eventId, currency, slots  } = paymentData;
-            const isValid = await this.razorpay.verifyPayment({
+            const isValid = await this._razorpay.verifyPayment({
                 orderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
                 signature: razorpay_signature,
@@ -370,8 +369,8 @@ export class EventManagement {
             
             if(event === null) return false;
             console.log(event,'kolaa');
-            await this.eventRepository.updateSlots(event);
-            await this.salesRepository.create({
+            await this._eventRepository.updateSlots(event);
+            await this._salesRepository.create({
                 userId,
                 eventId: eventId,
                 saleType: SaleType.EVENT,
@@ -394,8 +393,8 @@ export class EventManagement {
             const event = await this.slotCalculation(eventId,amount, userId,  bookedSlots)
             console.log(event)
             if(event === null) return false;
-            await this.eventRepository.updateSlots(event);            
-            await this.salesRepository.create({
+            await this._eventRepository.updateSlots(event);            
+            await this._salesRepository.create({
                 userId,
                 eventId: eventId,
                 saleType: SaleType.EVENT,
@@ -412,7 +411,7 @@ export class EventManagement {
 
     async bookedEvents(userId: string): Promise<Event[] | null> {
         try {
-            const eventsDoc = await this.eventRepository.findBookedEvents(userId);
+            const eventsDoc = await this._eventRepository.findBookedEvents(userId);
             const eventEntity = toEntities(eventsDoc);
             if(eventEntity === null) return null
             const events = toDTOs(eventEntity)
@@ -450,7 +449,7 @@ export class EventManagement {
                 await Promise.all(
                     events.events.map(async (doc) => {
                         doc.image = await Promise.all(
-                            doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                            doc.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                         );
                     })
                 );

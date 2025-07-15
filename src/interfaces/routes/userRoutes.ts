@@ -22,7 +22,7 @@ import { validateRequest } from "../middlewares/validateRequest";
 import { userLoginValidator } from "../validators/userValidator";
 import { userSignupValidator } from "../validators/userValidator";
 
-import { getLocation } from "../../infrastructure/services/Geolocation";
+// import { getLocation } from "../../infrastructure/services/Geolocation";
 
 const router = express.Router();
 

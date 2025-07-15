@@ -1,5 +1,5 @@
-import { AdminRepoDTO } from "../../usecases/dtos/AdminDTO";
-import { AdminDocument } from "../../infrastructure/persistence/interfaces/IAdminModel";
+import { Admin } from "../entities/Admin";
+
 export interface IAdminRepository {
-    findByEmail(email: string): Promise<AdminDocument | null>;
+    findByEmail(email: string): Promise<Admin | null>;
 };

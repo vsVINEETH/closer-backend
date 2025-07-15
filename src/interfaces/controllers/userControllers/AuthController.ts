@@ -4,42 +4,20 @@ import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 import { setCookieOptions } from "../../utils/sessionCookie";
 
-//useCase's
-import { LogUser } from "../../../usecases/usecases/user/LogUseCase";
-import { SignupUser } from "../../../usecases/usecases/user/SignupUseCase";
-import { Security } from "../../../usecases/usecases/user/SecurityUseCase";
-
-//repositories
-import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
-
-//external services
-import { Token } from "../../../infrastructure/services/Jwt";
-import { Bcrypt } from "../../../infrastructure/services/Bcrypt";
-import { Mailer } from "../../../infrastructure/services/Mailer";
-import { OTP } from "../../../infrastructure/services/Otp";
-import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
+import { logUserUseCase, signupUserUseCase, securityUserUseCase } from "../../../di/user.di";
 
 export class UserAuthController {
-    private logUseCase: LogUser;
-    private signupUseCase: SignupUser;
-    private securityUseCase: Security;
 
-    constructor(){
-        const bcrypt = new Bcrypt();
-        const mailer = new Mailer();
-        const otp = new OTP();
-        const token = new Token();
-        const userRepository = new UserRepository();
-        const s3ClientAccessControll = new S3ClientAccessControll()
-        this.logUseCase = new LogUser(userRepository, token, bcrypt, s3ClientAccessControll);
-        this.signupUseCase = new SignupUser( userRepository, mailer, bcrypt, otp, token, s3ClientAccessControll);
-        this.securityUseCase = new Security(userRepository, bcrypt, otp, mailer, s3ClientAccessControll)
-    };
+    constructor(
+      private _logUseCase = logUserUseCase,
+      private _signupUseCase = signupUserUseCase,
+      private _securityUseCase = securityUserUseCase,
+    ){}
 
     login = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { email, password } = req.body;
-        const { user, tokens, status } = await this.logUseCase.login(email, password);
+        const { user, tokens, status } = await this._logUseCase.login(email, password);
     
         if (user && tokens) {
           req.session.accessToken = tokens.accessToken;
@@ -64,7 +42,7 @@ export class UserAuthController {
     loginAuth = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { name, email } = req.body;
-        const { user, tokens, status } = await this.logUseCase.loginAuth(name, email);
+        const { user, tokens, status } = await this._logUseCase.loginAuth(name, email);
     
         if (user && tokens) {
           req.session.userAccessToken = tokens.accessToken;
@@ -95,7 +73,7 @@ export class UserAuthController {
     signup = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { username, email, password, phone } = req.body;
-        const userDTO = await this.signupUseCase.signup({
+        const userDTO = await this._signupUseCase.signup({
           username,
           email,
           password,
@@ -117,7 +95,7 @@ export class UserAuthController {
     verifyOTP = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { email, otp } = req.body;
-        const verifyDTO = await this.signupUseCase.verifyOTP({ email, otp });
+        const verifyDTO = await this._signupUseCase.verifyOTP({ email, otp });
     
         if (verifyDTO) {
           res.status(HttpStatus.OK).json({message: ResponseMessages.OTP_VERIFIED_SUCCESSFULLY, verifyDTO});
@@ -135,7 +113,7 @@ export class UserAuthController {
     resendOTP = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { email } = req.body;
-        const result = await this.signupUseCase.resendOTP(email);
+        const result = await this._signupUseCase.resendOTP(email);
     
         if (result) {
           res.status(HttpStatus.OK).json({ message: ResponseMessages.OTP_SHARED_SUCCESSFULLY});
@@ -156,7 +134,7 @@ export class UserAuthController {
         
           //const image = imageFiles.map((file) => file.location);
           const setupAccountData =  req.body;
-          const { user, tokens } = await this.signupUseCase.setupAccount(setupAccountData, imageFiles);
+          const { user, tokens } = await this._signupUseCase.setupAccount(setupAccountData, imageFiles);
     
         if (user && tokens) {
           req.session.accessToken = tokens.accessToken;
@@ -176,7 +154,7 @@ export class UserAuthController {
   
         const userId = req.body.id;
         const newPasswordData = req.body.formData;
-        const result = await this.securityUseCase.changePassword(userId, newPasswordData);
+        const result = await this._securityUseCase.changePassword(userId, newPasswordData);
     
         if (result) {
           res.status(HttpStatus.OK).json({ message: ResponseMessages.UPDATED_SUCCESSFULLY });
@@ -195,7 +173,7 @@ export class UserAuthController {
       try {
      
         const forgotPasswordData = req.body.formData;
-        const result = await this.securityUseCase.forgotPassword(forgotPasswordData);
+        const result = await this._securityUseCase.forgotPassword(forgotPasswordData);
         if(result){
           res.status(HttpStatus.OK).json({message: ResponseMessages.OTP_SHARED_SUCCESSFULLY});
           return
@@ -210,7 +188,7 @@ export class UserAuthController {
     forgotVerify = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const {email, otp} = req.body;
-        const result = await this.securityUseCase.verifyOTP({email, otp})
+        const result = await this._securityUseCase.verifyOTP({email, otp})
         if(result){
           res.status(HttpStatus.ACCEPTED).json({message: ResponseMessages.OTP_VERIFIED_SUCCESSFULLY});
           return;
@@ -225,7 +203,7 @@ export class UserAuthController {
     forgotResend = async(req: Request, res: Response, next: NextFunction) => {
       try {
         const {email} = req.body;
-       const result = await this.securityUseCase.resendOTP(email);
+       const result = await this._securityUseCase.resendOTP(email);
        if(result){
         res.status(HttpStatus.OK).json({message: ResponseMessages.OTP_SHARED_SUCCESSFULLY});
         return;

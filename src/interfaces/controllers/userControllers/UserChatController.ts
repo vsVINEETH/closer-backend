@@ -3,39 +3,24 @@ import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 
-
-//useCase's
-import { CommonOperations } from "../../../usecases/usecases/user/CommonUseCase";
-import { ChatManagement } from "../../../usecases/usecases/user/ChatUseCase";
-
-//repositories
-import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
-import { ChatRepository } from "../../../infrastructure/repositories/ChatRepository";
-import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
-import { Geolocation } from "../../../infrastructure/services/Geolocation";
+import { chatUserUseCase, commonUserUseCase } from "../../../di/user.di";
 
 export class UserChatController {
-    private commonUseCase: CommonOperations;
-    private chatUseCase: ChatManagement;
 
-    constructor(){
-        const userRepository = new UserRepository();
-        const chatRepository = new ChatRepository();
-        const s3ClientAccessControll = new S3ClientAccessControll()
-        const geolocation = new Geolocation()
-        this.chatUseCase = new ChatManagement(chatRepository);
-        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll,geolocation);
-    };
+    constructor(
+      private _commonUseCase = commonUserUseCase,
+      private _chatUseCase = chatUserUseCase
+    ){}
 
     fetchMessages = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userId = req.query.id;
-        const matches = await this.commonUseCase.fetchMatches(userId as string);
+        const matches = await this._commonUseCase.fetchMatches(userId as string);
         if(!matches){
           res.status(HttpStatus.NO_CONTENT).json({messages: ResponseMessages.NO_CONTENT_OR_DATA})
           return;
         }
-        const messages = await this.chatUseCase.fetchMessages(userId as string, matches);
+        const messages = await this._chatUseCase.fetchMessages(userId as string, matches);
     
         if(matches || messages) {
           res.status(HttpStatus.OK).json({matches, messages});
@@ -51,8 +36,8 @@ export class UserChatController {
       try {
         const senderId = req.query.sender;
         const receiverId = req.query.receiver;
-        const user = await this.commonUseCase.fetchUserById(receiverId as string);
-        const result = await this.chatUseCase.fetchChats(senderId as string, receiverId as string);
+        const user = await this._commonUseCase.fetchUserById(receiverId as string);
+        const result = await this._chatUseCase.fetchChats(senderId as string, receiverId as string);
         
         if(result || user){
           res.status(HttpStatus.OK).json({chats:result, receiver: user});

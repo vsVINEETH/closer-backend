@@ -4,47 +4,35 @@ import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 import { setCookieOptions } from "../../utils/sessionCookie";
 
-//useCase's
-import { LogAdmin } from "../../../usecases/usecases/admin/LogUseCase";
+import { logAdminUseCase } from "../../../di/admin.di";
 
-//repositories
-import { AdminRepository } from "../../../infrastructure/repositories/AdminRepository";
-
-//external services
-import { Token } from "../../../infrastructure/services/Jwt";
-import { Bcrypt } from "../../../infrastructure/services/Bcrypt";
+import { toAdminDTO } from "../../mappers/adminDTOMapper";
 
 export class AdminAuthController {
-    private logUseCase: LogAdmin;
 
-    constructor(){
-        const token = new Token();
-        const bcrypt = new Bcrypt();
-        const adminRepository = new AdminRepository();
-
-        this.logUseCase = new LogAdmin(adminRepository, token, bcrypt)
-    };
+    constructor(
+        private _logUseCase = logAdminUseCase
+    ){};
 
     login = async (req: Request, res: Response, next: NextFunction) => {
         try {
     
             const { email, password } = req.body;
-            const { admin, tokens } = await this.logUseCase.login(email, password);
+            const { admin, tokens } = await this._logUseCase.login(email, password);
     
             if (admin && tokens) {
                 req.session.accessToken = tokens.accessToken;
                 res.cookie('refreshToken', tokens.refreshToken, setCookieOptions);
-                res.status(HttpStatus.OK).json({ admin: admin })
+                res.status(HttpStatus.OK).json({ admin: toAdminDTO(admin) })
                 return;
-            }
-    
+            };
+
             res.status(HttpStatus.UNAUTHORIZED).json({ message: ResponseMessages.UNAUTHORIZED_ACTION })
             return;
         } catch (error) {
             next(error)
         }
     };
-
 
     logout = async (req: Request, res: Response, next: NextFunction) => {
         try {

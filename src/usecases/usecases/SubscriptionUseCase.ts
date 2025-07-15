@@ -123,7 +123,7 @@ export class SubscriptionManagement {
 
             if(subscriptionEntity === null) return null;
             const subsData = toDTO(subscriptionEntity);
-            
+
             if (subsData) {
                 const status = !subscription.isListed;
                 const result = await this.subscriptionRepository.listById(subscriptionId, status);

@@ -822,6 +822,5 @@ export class UserRepository implements IUserRepository {
       throw new Error("Error fetching dashboard data");
     }
   }
-  
-  
-}
+
+};

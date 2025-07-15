@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { HttpStatus } from "../../domain/enums/httpStatus";
+import { ResponseMessages } from "../constants/ResponseMessages";
 
 interface CustomError extends Error {
   status?: number;
@@ -7,8 +9,8 @@ interface CustomError extends Error {
 const errorMiddleware = (err: CustomError, req: Request, res: Response, next: NextFunction): void => {
   console.error(err.stack);
 
-  const statusCode = err.status || 500;
-  const message = err.message || "Internal Server Error";
+  const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
+  const message = err.message || ResponseMessages.INTERNAL_SERVER_ERROR;
 
   res.status(statusCode).json({
     success: false,

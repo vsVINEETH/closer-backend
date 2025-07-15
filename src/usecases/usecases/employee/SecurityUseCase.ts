@@ -5,14 +5,14 @@ import { IToken } from "../../interfaces/IToken";
 import { IOtp } from "../../interfaces/IOtp";
 import { IMailer } from "../../interfaces/IMailer";
 import { tempEmployeeStore } from "../../dtos/CommonDTO";
-import { toDTO, toEntity } from "../../mappers/employeeMapper";
+import { toDTO, toEntity } from "../../mappers/EmployeeMapper";
 export class Security {
   constructor(
-    private employeeRepository: IEmployeeRepository,
-    private bcrypt: IBcrypt,
-    private token: IToken,
-    private OTP: IOtp,
-    private mailer: IMailer
+    private _employeeRepository: IEmployeeRepository,
+    private _bcrypt: IBcrypt,
+    private _token: IToken,
+    private _OTP: IOtp,
+    private _mailer: IMailer
   ) { }
 
   otpExpireation(email: string) {
@@ -26,34 +26,24 @@ export class Security {
     } catch (error) {
       throw new Error("something happend in otpExpireation");
     }
-  }
+  };
 
   async changePassword(employeeId: string, newPasswordData: passwordDTO): Promise<boolean | null> {
     try {
-      const employeeDoc = await this.employeeRepository.findById(employeeId);
-      
-      if (!employeeDoc)  return null;
+      const employee = await this._employeeRepository.findById(employeeId);
+      if(employee){
+        let result = await this._bcrypt.compare(newPasswordData.currentPassword, employee.password)
 
-      const employeeEntity = toEntity(employeeDoc);
+        if(result){
+          const hashedPassword = await this._bcrypt.Encrypt(newPasswordData.newPassword);
+          await this._employeeRepository.updatePassword(
+            employee.id,
+            hashedPassword
+          );
 
-      if(employeeEntity === null) return null;
-
-      const employee = toDTO(employeeEntity);
-
-      const result = employee.password
-        ? await this.bcrypt.compare(newPasswordData.currentPassword, employee.password)
-        : false;
-
-      if (result) {
-
-        const hashedPassword = await this.bcrypt.Encrypt(newPasswordData.newPassword);
-        await this.employeeRepository.updatePassword(
-          employee.id,
-          hashedPassword
-        );
-
-        return true;
-      }
+          return true;
+        }; 
+      };
 
       return false;
     } catch (error) {

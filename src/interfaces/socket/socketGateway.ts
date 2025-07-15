@@ -81,13 +81,13 @@ export class SocketGateway {
       socket.on("notification", async (data) => {
         const { user, interactor, type, message, image } = data; // `user` is the opposite user's ID
         try {
-          const notification = new Notification(
-            "",
-            user,
-            interactor,
-            type,
-            message
-          );
+          const notification = new Notification({
+            id:'',
+            user: user,
+            interactor: interactor,
+            type: type,
+            message: message
+          });
           await notifyUserUseCase.execute(notification);
           await commonUseCase.interestedUsers(user, interactor);
 

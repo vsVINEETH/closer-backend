@@ -3,11 +3,13 @@ import { IChatRepository } from "../../../domain/repositories/IChatRepository";
 import { ChatMessage, ChatDTO, CallLogType, UserDetails, MatchedUserMessage, Messages } from "../../dtos/ChatDTO";
 
 export class ChatManagement {
-    constructor(private chatRepository: IChatRepository) { }
+    constructor(
+        private _chatRepository: IChatRepository
+    ) { }
 
     async saveChat(chatMessage: ChatMessage): Promise<  string | null> {
         try {
-           const chatId = await this.chatRepository.create(chatMessage);
+           const chatId = await this._chatRepository.create(chatMessage);
            return chatId;
         } catch (error) {
             throw new Error("something happend in saveChat");
@@ -16,7 +18,7 @@ export class ChatManagement {
 
     async updateChatStatus(status: string, isRead: boolean, chatId: string):Promise<void>{
         try {
-            await this.chatRepository.updateStatus(status, isRead, chatId);
+            await this._chatRepository.updateStatus(status, isRead, chatId);
         } catch (error) {
             throw new Error('something happend in updateChatStatus')
         }
@@ -24,7 +26,7 @@ export class ChatManagement {
 
     async  updateDeliverMessage(status: string, receiverId: string): Promise<void> {
         try {
-            await this.chatRepository.updateDeliverMessage(status, receiverId);
+            await this._chatRepository.updateDeliverMessage(status, receiverId);
         } catch (error) {
           throw new Error('something happend in updateDeliverMessage')
         }
@@ -32,7 +34,7 @@ export class ChatManagement {
 
     async updateUnreadChats(senderId: string, receiverId: string): Promise<void>{
         try {
-            await this.chatRepository.updateUnreadedMessage(senderId, receiverId)
+            await this._chatRepository.updateUnreadedMessage(senderId, receiverId)
         } catch (error) {
            throw new Error('something happedn in updateUnreadChats') 
         }
@@ -40,7 +42,7 @@ export class ChatManagement {
 
     async saveCallLog(callLog: CallLogType): Promise<void> {
         try {
-            await this.chatRepository.createCallLog(callLog);
+            await this._chatRepository.createCallLog(callLog);
         } catch (error) {
             throw new Error('something happend in saveCallLog')
         }
@@ -48,7 +50,7 @@ export class ChatManagement {
 
     async fetchChats(senderId: string, receiverId: string): Promise<Chat[] | null> {
         try{
-            const result = await this.chatRepository.findChats(senderId, receiverId);
+            const result = await this._chatRepository.findChats(senderId, receiverId);
             return result ? result.length === 0 ? [] : result : null;
         }catch(error){
             throw new Error('something happend in fetchChats')
@@ -62,7 +64,7 @@ export class ChatManagement {
                 return []; 
             }
 
-            const messages = await this.chatRepository.findMessages(userId, matches)
+            const messages = await this._chatRepository.findMessages(userId, matches)
             if(!messages || messages.length === 0){
                 return [];
             }

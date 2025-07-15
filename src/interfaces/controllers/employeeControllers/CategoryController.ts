@@ -3,27 +3,19 @@ import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 
-//useCase's
-import { CategoryManagement } from "../../../usecases/usecases/employee/CategoryUseCase";
-
-//repositories
-import { CategoryRepository } from "../../../infrastructure/repositories/CategoryRepository";
 import { paramsNormalizer } from "../../utils/filterNormalizer";
 
+import { categoryUseCase } from "../../../di/employee.di";
+
 export class EmployeeCategoryController {
-    private categoryUseCase: CategoryManagement;
-    
-    constructor(){
-        const categoryRepository = new CategoryRepository();
-
-        this.categoryUseCase = new CategoryManagement(categoryRepository)
-    };
-
+    constructor(
+      private _categoryUseCase = categoryUseCase,
+    ){};
 
     fetchCategoryData = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const filterOptions = await paramsNormalizer(req.query)
-        const result = await this.categoryUseCase.fetchCategoryData(filterOptions);
+        const result = await this._categoryUseCase.fetchCategoryData(filterOptions);
         if (result) {
           res.status(HttpStatus.OK).json(result);
           return;
@@ -40,7 +32,7 @@ export class EmployeeCategoryController {
       try {
         const categoryData  = req.body;
         const filterOptions = await paramsNormalizer(req.query)
-        const result = await this.categoryUseCase.createCategory(categoryData, filterOptions);
+        const result = await this._categoryUseCase.createCategory(categoryData, filterOptions);
     
         if (result) {
           res.status(HttpStatus.OK).json(result);
@@ -58,7 +50,7 @@ export class EmployeeCategoryController {
       try {
         const categoryId = req.body.id;
         const filterOptions = await paramsNormalizer(req.query)
-        const result = await this.categoryUseCase.handleListing(categoryId, filterOptions);
+        const result = await this._categoryUseCase.handleListing(categoryId, filterOptions);
     
         if (result) {
           res.status(HttpStatus.OK).json(result);
@@ -74,7 +66,7 @@ export class EmployeeCategoryController {
       try {
         const updatedCategoryData = req.body;
         const filterOptions = await paramsNormalizer(req.query)
-        const result = await this.categoryUseCase.updateCategory(updatedCategoryData, filterOptions);
+        const result = await this._categoryUseCase.updateCategory(updatedCategoryData, filterOptions);
         
         if(result){
           res.status(HttpStatus.OK).json({message:ResponseMessages.UPDATED_SUCCESSFULLY, result})
@@ -86,7 +78,6 @@ export class EmployeeCategoryController {
         next(error)
       }
     };
-}
-
+};
 
 export const employeeCategoryController = new EmployeeCategoryController();

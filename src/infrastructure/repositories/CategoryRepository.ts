@@ -1,71 +1,51 @@
 import { ICategoryRespository } from "../../domain/repositories/ICategoryRepository";
 import { Category } from "../../domain/entities/Category";
-import { CategoryDTO } from "../../usecases/dtos/CategoryDTO";
 import { CategoryModel } from "../persistence/models/CategoryModel";
 import { SortOrder } from "../config/database";
+import { toCategoryEntitiesFromDoc, toCategoryEntityFromDoc } from "../mappers/categoryDataMapper";
 
 export class CategoryRepository implements ICategoryRespository {
-  async findById(categoryId: string): Promise<CategoryDTO | null> {
+  async findById(categoryId: string): Promise<Category | null> {
     try {
       const category = await CategoryModel.findById(categoryId);
-      if (category) {
-        return {
-          id: category.id,
-          name: category.name,
-          isListed: category.isListed,
-          createdAt: category.createdAt.toLocaleDateString(),
-        };
-      };
-      return null;
+      return category ? toCategoryEntityFromDoc(category) : null;
     } catch (error) {
       throw new Error("something happend in findById");
-    }
-  }
+    };
+  };
 
     async findAll<T>(
       query: Record<string, T> = {},
       sort: { [key: string]: SortOrder } = {},
       skip: number = 0,
       limit: number = 0
-    ): Promise<{ category: Category[]; total: number } | null> {
+    ): Promise<Category[] | null> {
     try {
       const categories = await CategoryModel.find(query)
       .sort(sort)
       .skip(skip)
       .limit(limit)
       ;
-      if (categories) {
-        const category = categories.map(
-          (cat) =>
-            new Category(
-              cat.id,
-              cat.name,
-              cat.isListed,
-              cat.createdAt.toLocaleDateString()
-            )
-        );
-
-        const total = await CategoryModel.countDocuments(query);
-        return {category: category, total: total};
-      }
-      return null;
+      return categories ? toCategoryEntitiesFromDoc(categories) : null;
     } catch (error) {
       throw new Error("something happend in findAll");
     }
-  }
+  };
 
-  async findByName(categoryName: string): Promise<CategoryDTO | null> {
+  async countDocs<T>(query: Record<string, T> = {}): Promise<number> {
+    try {
+      const totalDocs = await CategoryModel.countDocuments(query);
+      return totalDocs;
+    } catch (error) {
+      throw new Error("something happend in countDocs");
+    }
+  };
+  
+
+  async findByName(categoryName: string): Promise<Category| null> {
     try {
       const category = await CategoryModel.findOne({ name: categoryName });
-      if (category) {
-        return {
-          id: category.id,
-          name: category.name,
-          isListed: category.isListed,
-          createdAt: category.createdAt.toLocaleDateString(),
-        };
-      }
-      return null;
+      return category ? toCategoryEntityFromDoc(category) : null;
     } catch (error) {
       throw new Error("something happend in findByName");
     }
@@ -115,5 +95,6 @@ export class CategoryRepository implements ICategoryRespository {
     } catch (error) {
       throw new Error("something happend in update");
     }
-  }
-}
+  };
+
+};

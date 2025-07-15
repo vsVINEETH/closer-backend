@@ -6,27 +6,14 @@ import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 //types
 import { SearchFilterSortParams } from "../../../usecases/dtos/CommonDTO";
 import { ParsedQs } from "../../../../types/express";
-//useCase's
-import { ContentManagement } from "../../../usecases/usecases/employee/ContentUseCase";
 
-//repositories
-import { ContentRepository } from "../../../infrastructure/repositories/ContentRepository";
-import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
-
-//external services
-import { Mailer } from "../../../infrastructure/services/Mailer";
-import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
+import { contentUseCases } from "../../../di/general.di";
 
 export class EmployeeDashboardController {
-    private contentUseCase: ContentManagement;
 
-    constructor(){
-        const mailer = new Mailer();
-        const userRepository = new UserRepository();
-        const contentRepository = new ContentRepository();
-        const s3ClientAccessControll = new S3ClientAccessControll();
-        this.contentUseCase = new ContentManagement(contentRepository, userRepository, mailer, s3ClientAccessControll);
-    };
+       constructor(
+        private _contentUseCase = contentUseCases
+       ){};
 
        private paramsNormalizer = async (query: ParsedQs ) => {
           try {
@@ -51,7 +38,7 @@ export class EmployeeDashboardController {
     dashboardData = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const filterConstraints:SearchFilterSortParams = await this.paramsNormalizer(req.query);
-        const result = await this.contentUseCase.getDashboardData(filterConstraints);
+        const result = await this._contentUseCase.getDashboardData(filterConstraints);
        
         if(result){
           res.status(200).json(result);

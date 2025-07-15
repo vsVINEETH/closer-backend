@@ -1,9 +1,9 @@
 import { IAdvertisementRepository } from "../../domain/repositories/IAdvertisementRepository";
 import { Advertisement } from "../../domain/entities/Advertisement";
 import { AdvertisementModel } from "../persistence/models/AdvertisementModel";
-import { AdvertisementDTO } from "../../usecases/dtos/AdvertisementDTO";
 import { SortOrder } from "../../../types/express/index";
-import { AdvertisementDocument } from "../persistence/interfaces/IAdvertisement";
+import { toAdvertisementEntityFromDoc, toAdvertisementEntitiesFromDoc } from "../mappers/advertisementDataMapper";
+import { AdvertisementUpdateType } from "../types/AdvertisementType";
 
 export class AdvertisementRepository implements IAdvertisementRepository {
   async findAll<T>( 
@@ -11,14 +11,13 @@ export class AdvertisementRepository implements IAdvertisementRepository {
       sort: { [key: string]: SortOrder } = {},
       skip: number = 0,
       limit: number = 0
-    ): Promise< AdvertisementDocument[]| null> {
+    ): Promise< Advertisement[]| null> {
     try {
       const adDoc = await AdvertisementModel.find(query)
       .sort(sort)
       .skip(skip)
       .limit(limit);
-
-      return adDoc;
+      return adDoc ? toAdvertisementEntitiesFromDoc(adDoc) : null;
     } catch (error) {
       throw new Error("something happend in findAll");
     }
@@ -30,19 +29,19 @@ export class AdvertisementRepository implements IAdvertisementRepository {
       return totalDocs;
     } catch (error) {
       throw new Error("something happend in countDocs");
-    }
+    };
   };
 
-  async findById(advertisementId: string): Promise<AdvertisementDocument | null> {
+  async findById(advertisementId: string): Promise<Advertisement| null> {
     try {
       const adDoc = await AdvertisementModel.findById(advertisementId);
-      return adDoc;
+      return adDoc ? toAdvertisementEntityFromDoc(adDoc) : null;
     } catch (error) {
       throw new Error("something happend findById");
     }
   };
 
-  async create(advertisementData: Partial<AdvertisementDocument>): Promise<boolean> {
+  async create(advertisementData: Advertisement): Promise<boolean> {
     try {
       const newAdvertisement = new AdvertisementModel(advertisementData);
       await newAdvertisement.save();
@@ -52,7 +51,7 @@ export class AdvertisementRepository implements IAdvertisementRepository {
     }
   };
 
-  async update(adId: string, advertisementData: Partial<AdvertisementDocument>): Promise<boolean> {
+  async update(adId: string, advertisementData: AdvertisementUpdateType): Promise<boolean> {
     try {
       const adDoc = await AdvertisementModel.findByIdAndUpdate(
         adId,

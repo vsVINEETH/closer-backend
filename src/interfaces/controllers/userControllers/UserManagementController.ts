@@ -4,39 +4,19 @@ import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 import { Preferences } from "../../../../types/express";
 
-//useCase's
-import { Security } from "../../../usecases/usecases/user/SecurityUseCase";
-import { CommonOperations } from "../../../usecases/usecases/user/CommonUseCase";
-
-//repositories
-import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
-
-//external services
-import { Mailer } from "../../../infrastructure/services/Mailer";
-import { Bcrypt } from "../../../infrastructure/services/Bcrypt";
-import { OTP } from "../../../infrastructure/services/Otp";
-import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
-import { Geolocation } from "../../../infrastructure/services/Geolocation";
+import { securityUserUseCase, commonUserUseCase } from "../../../di/user.di";
 
 export class UserManagementController {
-    private securityUseCase: Security;
-    private commonUseCase: CommonOperations;
 
-    constructor(){
-        const mailer = new Mailer();
-        const bcrypt = new Bcrypt();
-        const otp = new OTP();
-        const userRepository = new UserRepository();
-        const s3ClientAccessControll = new S3ClientAccessControll()
-        const geolocation = new Geolocation()
-        this.securityUseCase = new Security(userRepository, bcrypt, otp, mailer, s3ClientAccessControll);
-        this.commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll, geolocation);
-    };
+    constructor(
+      private _securityUseCase = securityUserUseCase,
+      private _commonUseCase = commonUserUseCase
+    ){}
 
     blockUser = async(req: Request, res:Response, next: NextFunction) => {
       try {
         const {blockedId, userId, userPreferences} = req.body || '';
-        const result = await this.securityUseCase.blockUser(blockedId, userId, userPreferences);
+        const result = await this._securityUseCase.blockUser(blockedId, userId, userPreferences);
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);
           return
@@ -51,7 +31,7 @@ export class UserManagementController {
     reportUser = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const {userId, reportedId, userPreferences} = req.body;
-        const result = await this.securityUseCase.reportUser(reportedId, userId, userPreferences);
+        const result = await this._securityUseCase.reportUser(reportedId, userId, userPreferences);
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);
           return
@@ -66,7 +46,7 @@ export class UserManagementController {
     blockList = async (req: Request, res:Response, next: NextFunction) =>{
       try {
         const userId = req.query.id as string || "";
-        const result = await this.securityUseCase.blockList(userId);
+        const result = await this._securityUseCase.blockList(userId);
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);
           return
@@ -83,7 +63,7 @@ export class UserManagementController {
         const unblockId = req.body.unblockId;
         const userId = req.body.id;
         
-        const result = await this.securityUseCase.unblockUser(unblockId, userId);
+        const result = await this._securityUseCase.unblockUser(unblockId, userId);
         if(result){
           res.status(HttpStatus.OK).json(result);
           return;
@@ -106,7 +86,7 @@ export class UserManagementController {
             lookingFor: string
             };
           
-            const result = await this.commonUseCase.fetchUserData(userPreferences);
+            const result = await this._commonUseCase.fetchUserData(userPreferences);
             if (result) {
               res.status(HttpStatus.OK).json(result);
               return;

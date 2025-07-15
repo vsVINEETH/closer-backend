@@ -5,12 +5,12 @@ import { toDTO, toEntity } from "../../mappers/WalletMapper";
 
 export class WalletManagement {
     constructor(
-        private walletRepository: IWalletRepository,
-        private razorpay: IRazorpay
+        private _walletRepository: IWalletRepository,
+        private _razorpay: IRazorpay
     ) { }
 
      async transactionCreator(userId: string, amount: number,description: string, paymentType: string ): Promise<WalletDTO | null>{
-        const wallet = await this.walletRepository.findOne(userId);
+        const wallet = await this._walletRepository.findOne(userId);
 
         if(!wallet) return null;
         const walletEntity = toEntity(wallet);
@@ -52,10 +52,10 @@ export class WalletManagement {
 
     async fetchData(userId: string): Promise<WalletDTO | null > {
         try {
-            const data = await this.walletRepository.findById(userId);
+            const data = await this._walletRepository.findById(userId);
 
             if (data === null) {
-               await this.walletRepository.create(userId)
+               await this._walletRepository.create(userId)
             }else{
                 const walletEntity = toEntity(data);
                  if(walletEntity === null) return null;
@@ -72,7 +72,7 @@ export class WalletManagement {
     async createOrder(paymentOrderData: {amount: number, currency: string}): Promise<boolean | null> {
         try {
             const { amount, currency } = paymentOrderData;
-            return await this.razorpay.createOrder(amount, currency);
+            return await this._razorpay.createOrder(amount, currency);
         } catch (error) {
             throw new Error('something happend in createOrder')
         }
@@ -85,7 +85,7 @@ export class WalletManagement {
                    razorpay_signature, userId, amount, description 
                   } = razorpayWalletPaymentData;
 
-            const isValid = await this.razorpay.verifyPayment({
+            const isValid = await this._razorpay.verifyPayment({
                 orderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
                 signature: razorpay_signature,
@@ -95,7 +95,7 @@ export class WalletManagement {
        
             if(walletData === null) return null;
             
-            const result = await this.walletRepository.addMoney(userId, walletData);
+            const result = await this._walletRepository.addMoney(userId, walletData);
             if (!result) { return null }
             
             const walletEntity = toEntity(result);
@@ -111,7 +111,7 @@ export class WalletManagement {
 
     async payWithWallet(userId: string, amount: number , description: string): Promise<WalletDTO | null> {
         try {
-            const walletData = await this.walletRepository.findById(userId);
+            const walletData = await this._walletRepository.findById(userId);
             if (!walletData) { return null }
             if (walletData?.balance < amount) {
                 return null
@@ -119,7 +119,7 @@ export class WalletManagement {
                 const walletData = await this.transactionCreator(userId,amount,description, 'debit');
 
                 if(walletData === null) return null;
-                const walletLatestData = await this.walletRepository.debitMoney(userId, walletData);
+                const walletLatestData = await this._walletRepository.debitMoney(userId, walletData);
 
                 if(walletLatestData === null) return null;
                 const walletEntity = toEntity(walletLatestData);

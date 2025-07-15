@@ -1,50 +1,47 @@
 import { IEmployeeRepository } from "../../domain/repositories/IEmployeeRepository";
 import { Employee } from "../../domain/entities/Employee";
-import {
-  EmployeeAccessDTO,
-  EmployeeCreate,
-  EmployeeStats,
-} from "../../usecases/dtos/EmployeeDTO";
+import {EmployeeStats} from "../../usecases/dtos/EmployeeDTO";
 import { EmployeeModel } from "../persistence/models/EmployeeModel";
 import { SortOrder } from "../config/database";
 import { Filter } from "../../../types/express";
-import { EmployeeDocument } from "../persistence/interfaces/IEmployeeModel";
+import { toEmployeeEntityFromDoc, toEmployeeEntitiesFromDoc } from "../mappers/employeeDataMapper";
+import { EmployeePersistanceType } from "../types/EmployeeTypes";
 
 export class EmployeeRepository implements IEmployeeRepository {
     
-  async findByEmail(email: string): Promise<EmployeeDocument | null> {
+  async findByEmail(email: string): Promise<Employee | null> {
     try {
       const employee = await EmployeeModel.findOne({ email });
-      return employee;
+      return employee ? toEmployeeEntityFromDoc(employee): null;
     } catch (error) {
       throw new Error("something happend in findByEmail");
     }
   };
 
-  async findById(employeeId: string): Promise<EmployeeDocument | null> {
+  async findById(employeeId: string): Promise<Employee | null> {
     try {
       const employee = await EmployeeModel.findById(employeeId);
-      return employee;
+      return employee ? toEmployeeEntityFromDoc(employee) : null;
     } catch (error) {
       throw new Error("somethign happend in findById");
     }
-  }
+  };
 
   async findAll<T>(
     query: Record<string, T> = {},
     sort: { [key: string]: SortOrder } = {},
     skip: number = 0,
     limit: number = 0
-  ): Promise< EmployeeDocument[] | null> {
+  ): Promise< Employee[] | null> {
     try {
       const employeeDoc = await EmployeeModel.find(query)
         .sort(sort)
         .skip(skip)
         .limit(limit);
-        return employeeDoc;
+        return employeeDoc ? toEmployeeEntitiesFromDoc(employeeDoc) : null;
     } catch (error) {
       throw new Error("something happend in findAll");
-    }
+    };
   };
 
   async countDocs<T>(query: Record<string, T> = {}): Promise<number> {
@@ -56,8 +53,7 @@ export class EmployeeRepository implements IEmployeeRepository {
     }
   };
 
-
-  async create(employeeData: EmployeeCreate): Promise<void> {
+  async create(employeeData: EmployeePersistanceType): Promise<void> {
     try {
       const newEmployee = new EmployeeModel(employeeData);
       await newEmployee.save();
@@ -91,7 +87,6 @@ export class EmployeeRepository implements IEmployeeRepository {
         { password: newPassword },
         { new: true }
       );
-
       return employee ? true : null;
     } catch (error) {
       throw new Error("something happend in update password");

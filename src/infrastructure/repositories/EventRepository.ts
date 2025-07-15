@@ -47,11 +47,9 @@ export class EventRepository implements IEventRepository {
 
     async create(eventData: EventBaseType): Promise<boolean | null> {
         try {
-           
            const newEvent = new EventModel(eventData);
            const result = await newEvent.save();
            return result !== null
-
         } catch (error) {
            throw new Error('something happend in create') 
         }
@@ -60,38 +58,36 @@ export class EventRepository implements IEventRepository {
     async update(eventId: string, updatedData: EventBaseType): Promise<boolean| null> {
         try {
 
-            const updatedEvent = await EventModel.findByIdAndUpdate(eventId,
+            const updatedEvent = await EventModel.findByIdAndUpdate(
+             eventId,
              updatedData, 
-             {
-                new: true, 
-            });
+             { new: true}
+            );
             
-            if (!updatedEvent) { return null}
-            return true;
-
+            return updatedEvent ? true : null;
         } catch (error) {
             throw new Error('Something happened in update');
         }
     };
 
     async updateSlots(event: EventDTO): Promise<void> {
-    try {
-        await EventModel.findByIdAndUpdate(
-        event.id,
-        {
-            $set: {
-            buyers: event.buyers,
-            slots: event.slots,
-            totalEntries: event.totalEntries,
-            totalSales: event.totalSales,
+        try {
+            await EventModel.findByIdAndUpdate(
+            event.id,
+            {
+                $set: {
+                buyers: event.buyers,
+                slots: event.slots,
+                totalEntries: event.totalEntries,
+                totalSales: event.totalSales,
+                },
             },
-        },
-        { new: true }
-        );
-    } catch (error) {
-        throw new Error('Something happened in updateSlots');
-    }
-    }
+            { new: true }
+            );
+        } catch (error) {
+            throw new Error('Something happened in updateSlots');
+        };
+    };
 
     async deleteById(eventId: string): Promise<boolean | null> {
         try {

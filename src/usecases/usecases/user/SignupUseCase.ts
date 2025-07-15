@@ -11,17 +11,17 @@ import { IS3Client } from "../../interfaces/IS3Client";
 export class SignupUser {
     private role: string;
     constructor(
-        private userRepository: IUserRepository,
-        private mailer: IMailer,
-        private bcrypt: IBcrypt,
-        private OTP: IOtp,
-        private token: IToken,
-        private s3: IS3Client,
+        private _userRepository: IUserRepository,
+        private _mailer: IMailer,
+        private _bcrypt: IBcrypt,
+        private _OTP: IOtp,
+        private _token: IToken,
+        private _s3: IS3Client,
     ) { this.role = 'user' }
 
     generateToken(userId: string): { accessToken: string, refreshToken: string } {
         try {
-            return this.token.generateTokens(userId, this.role)
+            return this._token.generateTokens(userId, this.role)
         } catch (error) {
             throw new Error('something happend in generateToken')
         }
@@ -44,14 +44,14 @@ export class SignupUser {
 
     async signup(signupData: CreateUserDTO): Promise<SingupDTO | null> {
         try {
-            const existingUser = await this.userRepository.findByEmail(signupData.email);
+            const existingUser = await this._userRepository.findByEmail(signupData.email);
             if (existingUser) { return null };
 
-            const OTP = this.OTP.GenerateOTP()
+            const OTP = this._OTP.GenerateOTP()
             console.log(OTP)
-            const password = await this.bcrypt.Encrypt(signupData.password);
-            const htmlOTP = this.mailer.generateOtpEmailContent(OTP);
-            this.mailer.SendEmail(signupData.email, 'One Time Password', htmlOTP);
+            const password = await this._bcrypt.Encrypt(signupData.password);
+            const htmlOTP = this._mailer.generateOtpEmailContent(OTP);
+            this._mailer.SendEmail(signupData.email, 'One Time Password', htmlOTP);
 
             tempUserStore[signupData.email] = {
                 username: signupData.username,
@@ -73,7 +73,7 @@ export class SignupUser {
 
     async verifyOTP(otpData: OtpDTO): Promise<VerifyDTO | null> {
         try {
-            const result = this.OTP.ValidateOTP(otpData.otp.join(""), tempUserStore[otpData.email].otp);
+            const result = this._OTP.ValidateOTP(otpData.otp.join(""), tempUserStore[otpData.email].otp);
             if (result) {
                 const newUser = new User(
                     crypto.randomUUID(),
@@ -83,7 +83,7 @@ export class SignupUser {
                     tempUserStore[otpData.email].phone,
                 );
 
-                await this.userRepository.create(newUser);
+                await this._userRepository.create(newUser);
                 delete tempUserStore[otpData.email];
                 return { username: newUser.username, email: newUser.email }
             }
@@ -101,13 +101,13 @@ export class SignupUser {
                 return null; // No such user data exists
             }
 
-            const newOTP = this.OTP.GenerateOTP();
+            const newOTP = this._OTP.GenerateOTP();
             tempUserStore[email].otp = newOTP;
             console.log(newOTP);
 
 
-            const htmlOTP = this.mailer.generateOtpEmailContent(newOTP)
-            this.mailer.SendEmail(email, 'One Time Password', htmlOTP);
+            const htmlOTP = this._mailer.generateOtpEmailContent(newOTP)
+            this._mailer.SendEmail(email, 'One Time Password', htmlOTP);
             this.otpExpireation(email);
             return true
         } catch (error) {
@@ -120,13 +120,13 @@ export class SignupUser {
         try {
             const image: string[] = [];
             for(let post of imageFiles){
-               const fileName = await this.s3.uploadToS3(post);
+               const fileName = await this._s3.uploadToS3(post);
                image.push(fileName);
             };
 
-            const user = await this.userRepository.update({...accountSetupData, image});
+            const user = await this._userRepository.update({...accountSetupData, image});
             if (user && user.image) {
-               user.image = await Promise.all (user.image.map(async (val) => await this.s3.retrieveFromS3(val as string)) )
+               user.image = await Promise.all (user.image.map(async (val) => await this._s3.retrieveFromS3(val as string)) )
                 const tokens = this.generateToken(user.id);
                 return {
                     user: {

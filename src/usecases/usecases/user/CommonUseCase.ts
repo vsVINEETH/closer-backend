@@ -8,9 +8,9 @@ import { IGeolocation } from "../../interfaces/IGeolocation";
 
 export class CommonOperations {
     constructor(
-        private userRepository: IUserRepository,
-        private s3: IS3Client,
-        private geolocation: IGeolocation
+        private _userRepository: IUserRepository,
+        private _s3: IS3Client,
+        private _geolocation: IGeolocation
     ) { }
 
 
@@ -38,13 +38,13 @@ export class CommonOperations {
     async fetchUserData(userPreferences: Preferences): Promise<UserDTO[] | [] | null> {
         try {
             userPreferences = await this.objectFormatter(userPreferences);
-            const users = await this.userRepository.findMatches(userPreferences);
+            const users = await this._userRepository.findMatches(userPreferences);
             if(users){
                 await Promise.all(
                     users.map(async (doc) => {
                         if (doc.image && Array.isArray(doc.image)) {// there chance image can be undefined
                             doc.image = await Promise.all(
-                                doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                                doc.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                             );
                         }
                     })
@@ -59,12 +59,12 @@ export class CommonOperations {
 
     async updateProfile(field: string, value: string, userId: string): Promise<UserDTO | null> {
         try {
-            const user = await this.userRepository.updateProfileById(field, value, userId);
+            const user = await this._userRepository.updateProfileById(field, value, userId);
             if (user) {
-                const user = await this.userRepository.findById(userId);
+                const user = await this._userRepository.findById(userId);
                 if(user?.image){
                     user.image = await Promise.all(
-                        user.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                        user.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                     );
                 };
 
@@ -78,13 +78,13 @@ export class CommonOperations {
 
     async updateProfileImageURL(userId: string): Promise<{image:string[] , imageExpiry: number} | null> {
         try {
-           const user = await this.userRepository.findById(userId);
+           const user = await this._userRepository.findById(userId);
            if (user?.image) {
             user.image = await Promise.all(
-                user.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                user.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
             );
 
-            return {image: user.image, imageExpiry: this.s3.urlExpiry}
+            return {image: user.image, imageExpiry: this._s3.urlExpiry}
         }
         return null;
         
@@ -95,10 +95,10 @@ export class CommonOperations {
 
     async profile(userId: string): Promise<UserDTO | null> {
         try {
-            const user = await this.userRepository.findById(userId);
+            const user = await this._userRepository.findById(userId);
             if (user?.image) {
                 user.image = await Promise.all(
-                    user.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                    user.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                 );
             }
             return user;
@@ -114,14 +114,14 @@ export class CommonOperations {
             const urlObj = new URL(imageSource);
             const imageKey = decodeURIComponent(urlObj.pathname.substring(1));
 
-            await this.s3.deleteFromS3(imageKey);
+            await this._s3.deleteFromS3(imageKey);
 
-            const result = await this.userRepository.deleteImageById(userId, imageKey);
+            const result = await this._userRepository.deleteImageById(userId, imageKey);
             if (result) {
-                const user = await this.userRepository.findById(userId);
+                const user = await this._userRepository.findById(userId);
                 if(user?.image){
                     user.image = await Promise.all(
-                        user.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                        user.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                     );
                 };
                 return user;
@@ -137,16 +137,16 @@ export class CommonOperations {
         try {
             const image: string[] = [];
             for(let post of imageSource){
-               const fileName = await this.s3.uploadToS3(post);
+               const fileName = await this._s3.uploadToS3(post);
                image.push(fileName);
             };
             
-            const result = await this.userRepository.addImageById(userId, image);
+            const result = await this._userRepository.addImageById(userId, image);
             if (result) {
-                const user = await this.userRepository.findById(userId);
+                const user = await this._userRepository.findById(userId);
                 if(user?.image){
                     user.image = await Promise.all(
-                        user.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                        user.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                     );
                 };
 
@@ -161,7 +161,7 @@ export class CommonOperations {
 
     async handleInterest(userId: string, interactorId: string): Promise<boolean | null> {
         try {
-            const result = await this.userRepository.addMatches(userId, interactorId);
+            const result = await this._userRepository.addMatches(userId, interactorId);
             return result !== null;
         } catch (error) {
             throw new Error('something happend in handleInterest');
@@ -171,7 +171,7 @@ export class CommonOperations {
 
     async changeProfileImage(imageIndex: number, userId: string): Promise<boolean> {
         try {
-           const result = await this.userRepository.changeImageById(imageIndex, userId);
+           const result = await this._userRepository.changeImageById(imageIndex, userId);
            return result !== null; 
         } catch (error) {
           throw new Error('something happend in changeProfileImage')  
@@ -180,14 +180,14 @@ export class CommonOperations {
 
     async fetchMatches(userId: string): Promise<UserDetails | null> {
         try {
-            const users = await this.userRepository.findMatchedUsers(userId);
+            const users = await this._userRepository.findMatchedUsers(userId);
             if (!users) { return null };
             if (users.matches && Array.isArray(users.matches)) {
                 await Promise.all(
                     users.matches.map(async (match) => {
                         if (match.image && Array.isArray(match.image)) {
                             match.image = await Promise.all(
-                                match.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                                match.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                             );
                         }
                     })
@@ -201,7 +201,7 @@ export class CommonOperations {
 
     async unmatchUser(userId: string, interactorId: string): Promise<boolean> {
         try {
-            const result = await this.userRepository.unmatchById(userId, interactorId);
+            const result = await this._userRepository.unmatchById(userId, interactorId);
             return result !== null;
         } catch (error) {
             throw new Error('something happend in unmatchUser');
@@ -211,7 +211,7 @@ export class CommonOperations {
 
     async interestedUsers(userId: string, interactorId: string): Promise<boolean> {
         try {
-            const result = await this.userRepository.addInterests(userId, interactorId);
+            const result = await this._userRepository.addInterests(userId, interactorId);
             return result;
         } catch (error) {
             throw new Error('something happend in interestedUsers');
@@ -220,10 +220,10 @@ export class CommonOperations {
 
     async fetchUserById(userId: string): Promise<UserDTO | null> {
         try {
-            const result = await this.userRepository.findById(userId);
+            const result = await this._userRepository.findById(userId);
             if(result?.image){
                 result.image = await Promise.all(
-                    result.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                    result.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                 );
             };
             return result
@@ -235,10 +235,10 @@ export class CommonOperations {
     async updateUserLocation(userId: string, locationData:{latitude: number, longitude: number, city: string, state: string, country:string}): Promise<User | null> {
         const {latitude, longitude, city, state, country} = locationData;
         try {
-           const result = await this.userRepository.updateUserLocation(userId, latitude, longitude, state, country , city);
+           const result = await this._userRepository.updateUserLocation(userId, latitude, longitude, state, country , city);
             if(result?.image){
                 result.image = await Promise.all(
-                    result.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
+                    result.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                 );
             };
            return result ? result : null;
@@ -250,7 +250,7 @@ export class CommonOperations {
 
     async fetchLocation(latitude: string, longitude: string):Promise<FormattedLocation | null>{
         try {
-           const location = await this.geolocation.GetLocation(latitude, longitude);
+           const location = await this._geolocation.GetLocation(latitude, longitude);
            return location;
         } catch (error) {
            throw new Error('something happend in fetchLocation') 

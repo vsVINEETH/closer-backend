@@ -1,9 +1,7 @@
 import { Sales } from "../../domain/entities/Sales";
-import { SalesDTO, RawSubscriptionData, EventSalesData, TotalMonthlySalesData, EventSales, SalesReport, SubscriptionSale, SubscriptionSaleIterate, DailySale, DailySaleIterate, EventSaleIterate } from "../../usecases/dtos/SalesDTO";
+import { TotalMonthlySalesData, EventSales, SalesReport, SubscriptionSaleIterate, DailySale, DailySaleIterate, EventSaleIterate } from "../../usecases/dtos/SalesDTO";
 import { SalesModel } from "../persistence/models/SalesModel";
 import { ISalesRepository } from "../../domain/repositories/ISalesRepository";
-import { Event } from "../../domain/entities/Event";
-
 
 export class SalesRepository implements ISalesRepository {
 
@@ -19,7 +17,6 @@ export class SalesRepository implements ISalesRepository {
     async dashboardData(): Promise<SalesReport | null> {
         try {
             const currentYear = new Date().getFullYear();
-    
             const result = await SalesModel.aggregate([
                 {
                     $match: {
