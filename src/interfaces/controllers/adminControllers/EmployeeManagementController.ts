@@ -1,17 +1,15 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 import { paramsNormalizer } from "../../utils/filterNormalizer";
-
 import { empManagementUseCase } from "../../../di/admin.di";
-
 import {toEmployeeDTOs } from "../../mappers/employeeDTOMapper";
+import { IEmployeeManagementUseCase } from "../../../usecases/interfaces/admin/IEmpMgntUseCase";
 
 export class EmployeeManagementController {
 
     constructor(
-        private _empMgntUseCase = empManagementUseCase
+        private _empMgntUseCase : IEmployeeManagementUseCase
     ){};
 
     fetchEmployeesData = async (req: Request, res: Response, next: NextFunction) => {
@@ -19,17 +17,14 @@ export class EmployeeManagementController {
             const filterOptions = await paramsNormalizer(req.query);
             const employeeData = await this._empMgntUseCase.fetchData(filterOptions);
             if (employeeData) {
-                res.status(HttpStatus.OK).json({
-                     employee: toEmployeeDTOs(employeeData.employee),
-                     total: employeeData.total
-                    });
+                res.status(HttpStatus.OK).json(employeeData);
                 return;
             };
             res.status(HttpStatus.NO_CONTENT).json({ message: ResponseMessages.NO_CONTENT_OR_DATA});
             return;
         } catch (error) {
-            next(error)
-        }
+            next(error);
+        };
     };
 
     createEmployee = async (req: Request, res: Response, next: NextFunction) => {
@@ -38,20 +33,14 @@ export class EmployeeManagementController {
             const filterOptions = await paramsNormalizer(req.query);
             const employeeData = await this._empMgntUseCase.createEmployee(name, email, filterOptions);
             if (employeeData) {
-                res.status(HttpStatus.OK).json({
-                     employeeData:{
-                        employee: toEmployeeDTOs(employeeData.employee),
-                        total: employeeData.total
-                     },
-                     message: ResponseMessages.CREATED_SUCCESSFULLY 
-                    })
+                res.status(HttpStatus.OK).json({employeeData,message: ResponseMessages.CREATED_SUCCESSFULLY})
                 return;
             }
             res.status(HttpStatus.CONFLICT).json({ message: ResponseMessages.EXISTING_RESOURCE })
             return
         } catch (error) {
-            next(error)
-        }
+            next(error);
+        };
     };
 
     blockEmployee = async (req: Request, res: Response, next: NextFunction) => {
@@ -60,19 +49,16 @@ export class EmployeeManagementController {
             const filterOptions = await paramsNormalizer(req.query);
             const employeeData = await this._empMgntUseCase.blockEmployee(employeeId, filterOptions);
             if (employeeData) {
-                res.status(HttpStatus.OK).json({
-                          employee: toEmployeeDTOs(employeeData.employee),
-                          total: employeeData.total
-                        });
+                res.status(HttpStatus.OK).json(employeeData);
                 return;
             };
             res.status(HttpStatus.NOT_FOUND).json({ message: ResponseMessages.RESOURCE_NOT_FOUND })
             return;
         } catch (error) {
             next(error);
-        }
+        };
     };
 
 };
 
-export const employeeManagementController = new EmployeeManagementController();
+export const employeeManagementController = new EmployeeManagementController(empManagementUseCase);

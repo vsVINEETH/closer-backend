@@ -1,16 +1,14 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { paramsNormalizer } from "../../utils/filterNormalizer";
-
 import { eventUseCase } from "../../../di/general.di";
-
+import { IEventUseCase } from "../../../usecases/interfaces/admin/IEventUseCase";
+import { imageFileNormalizer } from "../../utils/imageFileNormalizer";
 export class EventManagementController {
 
     constructor(
-        private _eventUseCase = eventUseCase
+        private _eventUseCase : IEventUseCase
     ){};
 
     fetchEvents = async (req: Request, res: Response, next: NextFunction) => {
@@ -30,14 +28,10 @@ export class EventManagementController {
 
     createEvent = async (req: Request, res: Response, next: NextFunction) => {
         try {
-      
-            const imageFiles = req.files && "images" in req.files
-            ? (req.files as { images: Express.Multer.File[] }).images
-            : [];
-            
+            const imageFiles = imageFileNormalizer(req.files)
             const eventData = req.body;
             const filterOptions = await paramsNormalizer(req.query)
-            const result = await this._eventUseCase.createEvent( eventData, filterOptions,  imageFiles);
+            const result = await this._eventUseCase.createEvent( eventData, filterOptions, imageFiles);
     
             if(result){
                 res.status(HttpStatus.OK).json(result);
@@ -53,7 +47,6 @@ export class EventManagementController {
     updateEvent = async (req: Request, res: Response, next: NextFunction) => {
         try {
            const updatedEventData = req.body;
-           console.log(req.body)
            const filterOptions = await paramsNormalizer(req.query)
            const result = await this._eventUseCase.updateEvent(updatedEventData, filterOptions);
            if(result){
@@ -83,4 +76,4 @@ export class EventManagementController {
     
 };
 
-export const eventManagementController = new EventManagementController();
+export const eventManagementController = new EventManagementController(eventUseCase);

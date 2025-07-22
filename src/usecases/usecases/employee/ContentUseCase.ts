@@ -7,9 +7,11 @@ import { SearchFilterSortParams } from "../../dtos/CommonDTO";
 import { paramToQueryContent } from "../../../interfaces/utils/paramToQuery";
 import { IS3Client } from "../../interfaces/IS3Client";
 import { toContentPersistance, toContentUpdate } from "../../../infrastructure/mappers/contentDataMapper";
-import { mapDashboardData } from "../../../interfaces/mappers/contentDTOMapper";
-import { VoteUpdateOptions, SharesUpdateOptions, FilterMatchType } from "../../types/ContentTypes";
-export class ContentManagement {
+import { mapDashboardData, toContentDTO, toContentDTOs } from "../../../interfaces/mappers/contentDTOMapper";
+import { VoteUpdateOptions, SharesUpdateOptions, FilterMatchType, ContentUseCaseResponse } from "../../types/ContentTypes";
+import { IContentUseCase } from "../../interfaces/employee/IContentUseCase";
+
+export class ContentManagement implements IContentUseCase {
     constructor(
         private _contentRepository: IContentRepository,
         private _userRepository: IUserRepository,
@@ -18,11 +20,11 @@ export class ContentManagement {
     ) { };
 
 
-    private async _fetchAndEnrich(query: SearchFilterSortParams): Promise<{contents:Content[], total: number}> {
+    private async _fetchAndEnrich(query: SearchFilterSortParams): Promise<ContentUseCaseResponse> {
         try {
             const queryResult = await paramToQueryContent(query);
             const total = await this._contentRepository.countDocs(queryResult.query);
-            const contents = await this._contentRepository.findAll(
+            const contents = await this._contentRepository.findAllAndPopulate(
                 queryResult.query,
                 queryResult.sort,
                 queryResult.skip,
@@ -38,7 +40,9 @@ export class ContentManagement {
                 })
                 );
             };
-            return { contents: contents ?? [], total: total ?? 0 };  
+
+            const mappedContent = contents ? toContentDTOs(contents) : []
+            return { contents: mappedContent ?? [], total: total ?? 0 };  
         } catch (error) {
             throw new Error('Something happend fetchAndEnrich')
         };
@@ -53,7 +57,7 @@ export class ContentManagement {
             }
 
             const htmlContent = this._mailer.generateNewContentNotifyEmail(contentData);
-            users.users.forEach(async (user) => {
+            users.forEach(async (user) => {
                 try {
                     await this._mailer.SendEmail(
                         user.email,
@@ -72,7 +76,7 @@ export class ContentManagement {
         }
     }
 
-    async createContent(contentData: ContentDTO, query: SearchFilterSortParams, imageFiles: Express.Multer.File[]): Promise<{contents:Content[], total: number}  | null> {
+    async createContent(contentData: ContentDTO, query: SearchFilterSortParams, imageFiles: Express.Multer.File[]): Promise<ContentUseCaseResponse| null> {
         try {
             const image: string[] = [];
             for(let post of imageFiles){
@@ -94,9 +98,8 @@ export class ContentManagement {
         }
     }
 
-    async fetchContentData(options: SearchFilterSortParams): Promise<{contents:Content[], total: number} | null> {
+    async fetchContentData(options: SearchFilterSortParams): Promise<ContentUseCaseResponse| null> {
         try {
-
             const contents = await this._fetchAndEnrich(options);
             return contents ?? null;
         } catch (error) {
@@ -104,12 +107,10 @@ export class ContentManagement {
         }
     }
 
-    async updateContent(updatedContentData: ContentDTO, query: SearchFilterSortParams): Promise<{contents:Content[], total: number} | null> {
+    async updateContent(updatedContentData: ContentDTO, query: SearchFilterSortParams): Promise<ContentUseCaseResponse| null> {
         try {
-
-            const dataToUpdate = toContentUpdate(updatedContentData)
-            const result = await this._contentRepository.update(dataToUpdate);
-           
+            const dataToUpdate = toContentUpdate(updatedContentData);
+            const result = await this._contentRepository.update(dataToUpdate.id, dataToUpdate);
             if (result) {
                 const contents = await this._fetchAndEnrich(query);
                 return contents ?? null;
@@ -120,7 +121,7 @@ export class ContentManagement {
         };
     };
 
-    async handleListing(contentId: string, query: SearchFilterSortParams): Promise<{contents:Content[], total: number}  | null> {
+    async handleListing(contentId: string, query: SearchFilterSortParams): Promise<ContentUseCaseResponse | null> {
         try {
             const content = await this._contentRepository.findById(contentId);
 
@@ -140,7 +141,7 @@ export class ContentManagement {
         };
     };
 
-    async deleteContent(contentId: string, query: SearchFilterSortParams): Promise<{contents:Content[], total: number}  | null> {
+    async deleteContent(contentId: string, query: SearchFilterSortParams): Promise<ContentUseCaseResponse| null> {
         try {
             const contentDetail = await this._contentRepository.findById(contentId)
            
@@ -211,7 +212,7 @@ export class ContentManagement {
                );
             };
 
-            return content;
+            return content ? toContentDTO(content) : null;
         } catch (error) {
             throw new Error('something happend in voteContent')
         }
@@ -237,7 +238,7 @@ export class ContentManagement {
                    content.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
                );
              }
-            return content;
+            return content ? toContentDTO(content) : null;
         } catch (error) {
             throw new Error('something happend in sharedContent')
         }

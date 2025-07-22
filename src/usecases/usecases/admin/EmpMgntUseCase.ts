@@ -7,8 +7,10 @@ import { IMailer } from "../../interfaces/IMailer";
 import { paramToQueryEmployee } from "../../../interfaces/utils/paramToQuery";
 import { toEmployeePersistance } from "../../../infrastructure/mappers/employeeDataMapper";
 import { EmployeeUseCaseResponse } from "../../types/EmployeeTypes";
+import { IEmployeeManagementUseCase } from "../../interfaces/admin/IEmpMgntUseCase";
+import { toEmployeeDTOs } from "../../../interfaces/mappers/employeeDTOMapper";
 
-export class EmployeeManagement {
+export class EmployeeManagement implements IEmployeeManagementUseCase {
     constructor(
         private _employeeRepository: IEmployeeRepository,
         private _bcrypt: IBcrypt,
@@ -26,7 +28,7 @@ export class EmployeeManagement {
                     queryResult.limit
                 );
     
-                return { employee: employees ?? [], total: total ?? 0 };  
+                return { employee: toEmployeeDTOs(employees) ?? [], total: total ?? 0 };  
             } catch (error) {
                 throw new Error('Something happend fetchAndEnrich')
             };
@@ -95,6 +97,6 @@ export class EmployeeManagement {
            return result;
         } catch (error) {
            throw new Error('something happend in dashboardData') 
-        }
+        };
     };
 };

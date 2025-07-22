@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 import { Preferences } from "../../../../types/express";
-
 import { securityUserUseCase, commonUserUseCase } from "../../../di/user.di";
 
 export class UserManagementController {
@@ -19,10 +17,10 @@ export class UserManagementController {
         const result = await this._securityUseCase.blockUser(blockedId, userId, userPreferences);
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);
-          return
+          return;
         }
         res.status(HttpStatus.NOT_FOUND).json({message: ResponseMessages.INVALID_ID});
-        return
+        return;
       } catch (error) {
         next(error);
       }
@@ -34,7 +32,7 @@ export class UserManagementController {
         const result = await this._securityUseCase.reportUser(reportedId, userId, userPreferences);
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);
-          return
+          return;
         }
         res.status(HttpStatus.NOT_FOUND).json({message: ResponseMessages.INVALID_ID})
       } catch (error) {
@@ -49,13 +47,13 @@ export class UserManagementController {
         const result = await this._securityUseCase.blockList(userId);
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);
-          return
-        }
+          return;
+        };
         res.status(HttpStatus.NOT_FOUND).json({message: ResponseMessages.INVALID_ID});
-        return
+        return;
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
     unblockUser = async (req: Request, res:Response, next: NextFunction) => {
@@ -67,30 +65,30 @@ export class UserManagementController {
         if(result){
           res.status(HttpStatus.OK).json(result);
           return;
-        }
+        };
         res.status(HttpStatus.NOT_FOUND).json({message: ResponseMessages.INVALID_ID});
         return;
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
 
     fetchUsersData = async (req: Request, res: Response, next: NextFunction) => {
         try {
-        const userPreferences: Preferences =  req.query as {
-            userId: string,
-            interestedIn: string,
-            ageRange: string,
-            distance: string,
-            lookingFor: string
+           const userPreferences: Preferences =  req.query as {
+                  userId: string,
+                  interestedIn: string,
+                  ageRange: string,
+                  distance: string,
+                  lookingFor: string
             };
           
             const result = await this._commonUseCase.fetchUserData(userPreferences);
             if (result) {
               res.status(HttpStatus.OK).json(result);
               return;
-            }
+            };
     
             res.status(HttpStatus.NOT_FOUND).json({ message: ResponseMessages.INVALID_ID });
             return;

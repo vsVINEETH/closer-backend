@@ -1,17 +1,15 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 import { setCookieOptions } from "../../utils/sessionCookie";
-
 import { logAdminUseCase } from "../../../di/admin.di";
-
 import { toAdminDTO } from "../../mappers/adminDTOMapper";
+import { IAdminLogUseCase } from "../../../usecases/interfaces/admin/ILogUseCase";
 
 export class AdminAuthController {
 
     constructor(
-        private _logUseCase = logAdminUseCase
+        private _logUseCase : IAdminLogUseCase
     ){};
 
     login = async (req: Request, res: Response, next: NextFunction) => {
@@ -31,7 +29,7 @@ export class AdminAuthController {
             return;
         } catch (error) {
             next(error)
-        }
+        };
     };
 
     logout = async (req: Request, res: Response, next: NextFunction) => {
@@ -46,4 +44,4 @@ export class AdminAuthController {
     };
 };
 
-export const adminAuthController = new AdminAuthController();
+export const adminAuthController = new AdminAuthController(logAdminUseCase);

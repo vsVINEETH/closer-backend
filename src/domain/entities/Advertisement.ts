@@ -7,8 +7,8 @@ export class Advertisement {
         public isListed: boolean;
         public createdAt: string;
 
-        constructor(
-            props:{id: string,
+        constructor(props:{
+                  id: string,
                    title: string, 
                    subtitle: string, 
                    content: string, 
@@ -23,5 +23,5 @@ export class Advertisement {
                     this.image = props.image,
                     this.isListed = props.isListed,
                     this.createdAt = props.createdAt
-                }
-}
+                };
+};

@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { commonUserUseCase } from "../../../di/user.di";
 
 export class ProfileControll {
@@ -24,7 +22,7 @@ export class ProfileControll {
         return;
       } catch (error) {
         next(error);
-      }
+      };
     };
 
     updateProfile = async (req: Request, res: Response, next: NextFunction) => {
@@ -56,20 +54,19 @@ export class ProfileControll {
       } catch (error) {
         next(error)
       }
-    }
+    };
 
     removeImage = async (req: Request, res: Response, next: NextFunction) => {
       try {
- 
-        const userId = req.body.id;
-        const imageSource = req.body.src;
-        const result = await this._commonUseCase.removeImage(userId, imageSource);
-        if(result){
-          res.status(HttpStatus.OK).json(result);
+          const userId = req.body.id;
+          const imageSource = req.body.src;
+          const result = await this._commonUseCase.removeImage(userId, imageSource);
+          if(result){
+            res.status(HttpStatus.OK).json(result);
+            return
+          }
+          res.status(HttpStatus.NOT_FOUND).json({message: ResponseMessages.FAILED_TO_UPDATE});
           return
-        }
-        res.status(HttpStatus.NOT_FOUND).json({message: ResponseMessages.FAILED_TO_UPDATE});
-        return
       } catch (error) {
        next(error) 
       }
@@ -81,8 +78,7 @@ export class ProfileControll {
         const imageFiles = req.files && "images" in req.files
          ? (req.files as { images: Express.Multer.File[] }).images
          : [];
-        
-       // const image = imageFiles.map((file) => file.location);
+         
         const result = await this._commonUseCase.addImage(userId, imageFiles)
         if(result){
           res.status(HttpStatus.ACCEPTED).json(result);

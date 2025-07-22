@@ -1,10 +1,11 @@
 import { Filter } from "../../../types/express/index";
 import { ISalesRepository } from "../../domain/repositories/ISalesRepository";
+import { mapSalesData } from "../../interfaces/mappers/salesDTOMapper";
 import { EventSales, SalesDTO, SalesReport } from "../../usecases/dtos/SalesDTO";
+import { ISalesUseCase } from "../interfaces/common/ISaleUseCase";
 import { IS3Client } from "../interfaces/IS3Client";
-// import { toDTO } from "../mappers/SalesMapper";
 
-export class SalesManagement {
+export class SalesManagement implements ISalesUseCase {
     constructor(
         private _salesRepository: ISalesRepository,
         private _s3: IS3Client
@@ -15,26 +16,23 @@ export class SalesManagement {
             await this._salesRepository.create(transactionDetails);
         } catch (error) {
           throw new Error('something happend in registerSale')  
-        }
-    }
+        };
+    };
 
     async getDashboarData(filterConstraints: Filter): Promise<SalesReport | null> {
         try {
-           const  dashboardData = await this._salesRepository.dashboardData(filterConstraints);
-        //    if(dashboardDoc === null) return null;
-           
-        //    const dashboardData = toDTO(dashboardDoc);
-        //    console.log(dashboardData);
-           return dashboardData ? dashboardData : null;
+           const currentYear = new Date().getFullYear();
+           const  salesData = await this._salesRepository.dashboardData(currentYear);
+           return salesData ? mapSalesData(salesData) : null;
         } catch (error) {
             throw new Error('Something happend in getDashboardData');
-        }
+        };
     };
 
     async getBookedEvents(userId: string): Promise<EventSales[]> {
         try {
             const bookedEvents = await this._salesRepository.findBookedEventsByUserId(userId);
-            console.log(bookedEvents)
+            
             if (bookedEvents) {
                 await Promise.all(
                     bookedEvents.map(async (doc) => {
@@ -45,10 +43,10 @@ export class SalesManagement {
                         }
                     })
                 );
-            }
+            };
             return bookedEvents;
         } catch (error) {
            throw new Error('something happend in getBookedEvents')
-        }
-    } 
-}
+        };
+    }; 
+};

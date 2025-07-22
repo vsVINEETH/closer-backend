@@ -1,3 +1,13 @@
+ 
+ export type LocationDTO = {
+  latitude: number, 
+  longitude: number, 
+  city: string, 
+  state: string, 
+  country:string
+}
+
+
  export interface UpdateResult {
     acknowledged: boolean;
     modifiedCount: number;
@@ -12,6 +22,7 @@ export interface Filter {
   endDate: string,
 }
   
+
 
   export interface SearchFilterSortParams {
     search: string,

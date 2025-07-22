@@ -1,3 +1,3 @@
-import { EmployeeDocument } from "../persistence/interfaces/IEmployeeModel";
+import { IEmployeeDocument } from "../persistence/interfaces/IEmployeeModel";
 
-export type EmployeePersistanceType = Pick <EmployeeDocument, "name" | "email" | "password">
+export type EmployeePersistanceType = Pick <IEmployeeDocument, "name" | "email" | "password">

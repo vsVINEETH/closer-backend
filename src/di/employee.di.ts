@@ -19,5 +19,5 @@ const employeeRepository = new EmployeeRepository();
 const categoryRepository = new CategoryRepository();
 
 export const logEmployeeUseCase = new LogEmployee(employeeRepository, bcrypt, token);
-export const securityUseCase = new Security(employeeRepository, bcrypt, token, otp, mailer);
+export const securityUseCase = new Security(employeeRepository, bcrypt);
 export const categoryUseCase = new CategoryManagement(categoryRepository);

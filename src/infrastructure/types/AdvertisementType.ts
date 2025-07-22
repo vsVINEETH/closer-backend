@@ -1,5 +1,5 @@
-import { AdvertisementDocument } from "../persistence/interfaces/IAdvertisement";
+import { IAdvertisementDocument } from "../persistence/interfaces/IAdvertisement";
 
-export type AdvertisementPersistenceType = Pick<AdvertisementDocument, "title" | "subtitle" | "content" | "image">;
+export type AdvertisementPersistenceType = Pick<IAdvertisementDocument, "title" | "subtitle" | "content" | "image">;
 
-export type AdvertisementUpdateType = Pick<AdvertisementDocument, "title" | "subtitle" | "content" | "isListed">;
+export type AdvertisementUpdateType = Pick<IAdvertisementDocument, "title" | "subtitle" | "content" | "isListed">;

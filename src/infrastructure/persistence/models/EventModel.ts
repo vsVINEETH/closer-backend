@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import { EventDocument } from "../interfaces/IEventModel";
+import { IEventDocument } from "../interfaces/IEventModel";
 
 const EventSchema: Schema = new Schema({
     title: {type: String},
@@ -23,4 +23,4 @@ const EventSchema: Schema = new Schema({
     timestamps: true
 });
 
-export const EventModel = mongoose.model<EventDocument>('event', EventSchema);
+export const EventModel = mongoose.model<IEventDocument>('event', EventSchema);

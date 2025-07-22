@@ -8,6 +8,16 @@ export interface AdvertisementDTO {
     createdAt: string,
 }
 
+export interface AdvertisementPersistanceDTO {
+    id: string,
+    title: string,
+    subtitle: string,
+    content: string,
+    image: string[] | File[],
+    isListed: boolean,
+    createdAt: string,
+}
+
 
 export interface FetchParams {
     search?: string;

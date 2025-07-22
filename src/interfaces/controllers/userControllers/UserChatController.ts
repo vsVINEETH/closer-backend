@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { chatUserUseCase, commonUserUseCase } from "../../../di/user.di";
 
 export class UserChatController {

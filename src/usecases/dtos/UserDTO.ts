@@ -8,6 +8,96 @@ interface Location {
   };
 }
 
+export type  UserLogDTO = { 
+  user: UserDTO | null, 
+  tokens: { accessToken: string, refreshToken: string } | null, 
+  status: boolean | null
+};
+
+export type UserSignupDTO = { 
+  user: UserDTO | null, tokens: { accessToken: string, refreshToken: string } | null,
+  }
+
+export type UserDashBoardData = {
+    newUsers:{
+      count: number
+    }[],
+    activeUsers:{
+      count: number,
+    }[],
+    primeMembers:{
+      count: number,
+    }[],
+    totalUsers:{
+      count: number
+    }[],
+    monthlyNewUsers:{
+      month: string,
+      count: number
+    }[],
+    genderSplit:{
+      _id: string,
+      count: number
+    }[],
+
+}
+
+export type UserDashBoardDTO = {
+    newUsers:{
+      count: number
+    }[],
+    activeUsers:{
+      count: number,
+    }[],
+    primeMembers:{
+      count: number,
+    }[],
+    totalUsers:{
+      count: number
+    }[],
+    monthlyNewUsers:{
+      month: string,
+      count: number
+    }[],
+    genderSplit:{
+      _id: string,
+      count: number
+    }[],
+
+}
+
+export interface MatchedUserDTO {
+  id: string;
+  username: string;
+  dob?: string;
+  gender?: string;
+  interestedIn?: string;
+  lookingFor?: string;
+  image?: string[] | File[];
+  imageExpiry?: number | null;
+};
+
+export interface UserProfileDTO {
+  id: string;
+  username: string;
+  email: string;
+  phone?: string;
+  dob?: string;
+  gender?: string;
+  interestedIn?: string;
+  lookingFor?: string;
+  image?: string[] | File[];
+  imageExpiry?: number | null;
+  createdAt?: string | Date;
+  prime?:{
+    type?:string,
+    isPrime?:boolean,
+    primeCount?: number,
+    endDate: Date| undefined,
+    startDate: Date | undefined,
+  }
+  location?: Location,
+};
 
 
 export interface UserDTO {
@@ -38,9 +128,21 @@ export interface UserDTO {
     billedAmount: number
   }
   location?: Location,
-}
+};
 
 
+export interface UserListingDTO {
+    id: string;
+    username: string;
+    email: string;
+    isBlocked?: boolean;
+    isBanned?:boolean;
+    image?: string[] | File[],
+    banExpiresAt?:string | null;
+    setupCompleted?: boolean;
+    createdAt?: string | Date;
+    reportedUsers?:string[],
+};
 
 export interface UserAuthDTO {
   id: string;

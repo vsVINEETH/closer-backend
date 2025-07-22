@@ -17,5 +17,5 @@ import { SearchFilterSortParams } from "../../usecases/dtos/CommonDTO";
         return filterOptions ?? {};
       } catch (error) {
        throw new Error('something went wrong') 
-      }
-    }
+      };
+    };

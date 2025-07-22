@@ -1,3 +1,6 @@
+import { Content } from "../../domain/entities/Content";
+import { ContentDTO } from "../dtos/ContentDTO";
+
 export type VoteUpdateOptions = {
   addToSet?: Record<string, string>;
   pull?: Record<string, string>;
@@ -12,3 +15,6 @@ export type FilterMatchType = {
     status?: string;
     category?: string;
 };
+
+
+export type ContentUseCaseResponse = {contents:ContentDTO[], total: number} 

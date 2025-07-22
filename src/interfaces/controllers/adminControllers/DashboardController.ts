@@ -1,22 +1,22 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { paramsNormalizer } from "../../utils/filterNormalizer";
-
 import { userManagementUseCase, empManagementUseCase, salesUseCases } from "../../../di/admin.di";
 import { eventUseCase } from "../../../di/general.di";
+import { IUserManagementUseCase } from "../../../usecases/interfaces/admin/IUserMgntUseCase";
+import { IEmployeeManagementUseCase } from "../../../usecases/interfaces/admin/IEmpMgntUseCase";
+import { IEventUseCase } from "../../../usecases/interfaces/admin/IEventUseCase";
+import { ISalesUseCase } from "../../../usecases/interfaces/common/ISaleUseCase";
 
 export class DashboardController {
 
     constructor(
-        private _userMgntUseCase = userManagementUseCase,
-        private _empMgntUseCase = empManagementUseCase,
-        private _eventUseCase = eventUseCase,
-        private _salesUseCase = salesUseCases
+        private _userMgntUseCase : IUserManagementUseCase,
+        private _empMgntUseCase : IEmployeeManagementUseCase,
+        private _eventUseCase : IEventUseCase,
+        private _salesUseCase : ISalesUseCase
     ){};
-
 
      dashboardData = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -43,8 +43,8 @@ export class DashboardController {
             }
         } catch (error) {
            next(error) 
-        }
+        };
     };
 };
 
-export const dashboardController = new DashboardController()
+export const dashboardController = new DashboardController(userManagementUseCase, empManagementUseCase, eventUseCase,salesUseCases )

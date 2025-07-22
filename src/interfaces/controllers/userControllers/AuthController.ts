@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 import { setCookieOptions } from "../../utils/sessionCookie";
-
 import { logUserUseCase, signupUserUseCase, securityUserUseCase } from "../../../di/user.di";
 
 export class UserAuthController {
@@ -58,7 +56,6 @@ export class UserAuthController {
         next(error);
       }
     };
-
 
     logout = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -132,8 +129,8 @@ export class UserAuthController {
            ? (req.files as { images: Express.Multer.File[] }).images
            : [];
         
-          //const image = imageFiles.map((file) => file.location);
           const setupAccountData =  req.body;
+          console.log(setupAccountData,'koko')
           const { user, tokens } = await this._signupUseCase.setupAccount(setupAccountData, imageFiles);
     
         if (user && tokens) {
@@ -144,14 +141,12 @@ export class UserAuthController {
           res.status(HttpStatus.NOT_ACCEPTABLE).json({ message: ResponseMessages.FAILED_TO_UPDATE});
         }
       } catch (error) {
-        next(error)
-      }
-    
+        next(error);
+      };
     };
 
     changePassword = async (req: Request, res: Response, next: NextFunction) => {
       try {
-  
         const userId = req.body.id;
         const newPasswordData = req.body.formData;
         const result = await this._securityUseCase.changePassword(userId, newPasswordData);
@@ -171,7 +166,6 @@ export class UserAuthController {
 
      forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
       try {
-     
         const forgotPasswordData = req.body.formData;
         const result = await this._securityUseCase.forgotPassword(forgotPasswordData);
         if(result){

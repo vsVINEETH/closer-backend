@@ -1,7 +1,6 @@
 import { Types } from "../../../types/express";
 
 export class Content {
-
         public id: string;
         public title: string;
         public subtitle: string;

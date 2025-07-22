@@ -2,6 +2,7 @@ import { Content } from "../../domain/entities/Content";
 import { ContentDTO, EmployeeDashboardDTO, MostLiked, MostShared, PopularCategory, RecentContent, TotalContent, TrendingContent } from "../../usecases/dtos/ContentDTO";
 
 export function toContentDTO(entity: Content): ContentDTO{
+  try {
     return {
             id: entity.id,
             title: entity.title,
@@ -14,26 +15,32 @@ export function toContentDTO(entity: Content): ContentDTO{
             upvotes: entity.upvotes,
             downvotes: entity.downvotes,
             shares: entity.shares
-       };
+       };    
+  } catch (error) {
+    throw new Error('Something happend in toContentDTO')
+  };
 };
 
 export function toContentDTOs(entities: Content[]): ContentDTO[]{
-
-    return entities.map((en) => (
-        {
-            id: en.id,
-            title: en.title,
-            subtitle: en.subtitle,
-            content: en.content,
-            image: en.image,
-            isListed: en.isListed,
-            createdAt: en.createdAt,
-            category: en.category,
-            upvotes: en.upvotes,
-            downvotes: en.downvotes,
-            shares: en.shares  
-        }
-    ))
+    try {
+      return entities.map((en) => (
+          {
+              id: en.id,
+              title: en.title,
+              subtitle: en.subtitle,
+              content: en.content,
+              image: en.image,
+              isListed: en.isListed,
+              createdAt: en.createdAt,
+              category: en.category,
+              upvotes: en.upvotes,
+              downvotes: en.downvotes,
+              shares: en.shares  
+          }
+      ));      
+    } catch (error) {
+      throw new Error('Something happend in toContentDTOs')
+    };
 };
 
 
@@ -46,34 +53,49 @@ export function mapDashboardData(
   trendingContent: TrendingContent[],
   popularCategory: PopularCategory[]
 ): EmployeeDashboardDTO {
-  return {
-    totalContent: totalContent ?? [],
 
-    mostLiked: (mostLiked ?? []).map(item => ({
-      title: item.title,
-      subtitle: item.subtitle,
-      content: item.content,
-      image: item.image,
-      upvotesCount: item.upvotesCount || 0,
-      createdAt: item.createdAt,
-    })),
+  try {
+    return {
+      totalContent: (totalContent ?? []).map(item => ({
+        content: item.content,
+        createdAt: item.createdAt,
+        downvotes: item.downvotes,
+        // image: string[] | File[],
+        isListed: item.isListed,
+        shares: item.shares,
+        subtitle: item.subtitle,
+        title: item.title,
+        upvotes: item.upvotes,
+      })) ?? [],
 
-    mostShared: (mostShared ?? []).map(item => ({
-      title: item.title,
-      subtitle: item.subtitle,
-      content: item.content,
-      image: item.image,
-      sharesCount: item.sharesCount || 0,
-      createdAt: item.createdAt,
-    })),
+      mostLiked: (mostLiked ?? []).map(item => ({
+        title: item.title,
+        subtitle: item.subtitle,
+        content: item.content,
+        // image: item.image,
+        upvotesCount: item.upvotesCount || 0,
+        createdAt: item.createdAt,
+      })),
 
-    recentContent: recentContent ?? [],
+      mostShared: (mostShared ?? []).map(item => ({
+        title: item.title,
+        subtitle: item.subtitle,
+        content: item.content,
+        // image: item.image,
+        sharesCount: item.sharesCount || 0,
+        createdAt: item.createdAt,
+      })),
 
-    trendingContents: trendingContent ?? [],
+      recentContent: recentContent ?? [],
 
-    popularCategory: (popularCategory ?? []).map(item => ({
-      _id: item._id?.toString() ?? "",
-      totalInteraction: item.totalInteraction ?? 0,
-    })),
+      trendingContents: trendingContent ?? [],
+
+      popularCategory: (popularCategory ?? []).map(item => ({
+        _id: item._id?.toString() ?? "",
+        totalInteraction: item.totalInteraction ?? 0,
+      })),
+    };    
+  } catch (error) {
+    throw new Error('Something happend in mapDashboardData')
   };
-}
+};

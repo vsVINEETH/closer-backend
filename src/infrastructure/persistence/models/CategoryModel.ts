@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import { CategoryDocument } from "../interfaces/ICategoryModel";
+import { ICategoryDocument } from "../interfaces/ICategoryModel";
 
 const CategorySchema: Schema = new Schema({
     name: {type: String},
@@ -8,4 +8,4 @@ const CategorySchema: Schema = new Schema({
     timestamps: true
 });
 
-export const CategoryModel = mongoose.model<CategoryDocument>('Category', CategorySchema);
+export const CategoryModel = mongoose.model<ICategoryDocument>('Category', CategorySchema);

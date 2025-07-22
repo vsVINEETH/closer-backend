@@ -5,8 +5,10 @@ import { paramToQueryAdvertisement } from "../../../interfaces/utils/paramToQuer
 import { IS3Client } from "../../interfaces/IS3Client";
 import { toAdvertisementPersistance, toAdvertisementUpdate } from "../../../infrastructure/mappers/advertisementDataMapper";
 import { AdvertisementUseCaseResponse } from "../../types/AdvertisementTypes";
+import { IAdvertisementUseCase } from "../../interfaces/admin/IAdvertisementUseCase";
+import { toAdvertisementDTO, toAdvertisementDTOs } from "../../../interfaces/mappers/advertisementDTOMapper";
 
-export class AdvertisementManagement {
+export class AdvertisementManagement implements IAdvertisementUseCase{
     constructor(
         private _advertisementRepository: IAdvertisementRepository,
         private _s3: IS3Client
@@ -14,7 +16,8 @@ export class AdvertisementManagement {
 
     private async _fetchAndEnrich(query: SearchFilterSortParams): Promise<AdvertisementUseCaseResponse> {
         try {
-           const queryResult = await paramToQueryAdvertisement(query);
+
+            const queryResult = await paramToQueryAdvertisement(query);
             const total = await this._advertisementRepository.countDocs(queryResult.query);
             const advertisements = await this._advertisementRepository.findAll(
                 queryResult.query,
@@ -32,7 +35,7 @@ export class AdvertisementManagement {
                 })
                 );
             };
-            return { advertisement: advertisements ?? [], total: total ?? 0 };  
+            return { advertisement: toAdvertisementDTOs(advertisements)  ?? [], total: total ?? 0 };  
         } catch (error) {
             throw new Error('Something happend fetchAndEnrich')
         };
@@ -47,7 +50,7 @@ export class AdvertisementManagement {
         };
     };
 
-    async createAdvertisement(advertisementData: AdvertisementDTO, query: SearchFilterSortParams, imageFiles:  Express.MulterS3.File[]): Promise<AdvertisementUseCaseResponse | null>{
+    async createAdvertisement(advertisementData: AdvertisementDTO, query: SearchFilterSortParams, imageFiles: Express.Multer.File[]): Promise<AdvertisementUseCaseResponse | null>{
         try {
             const image: string[] = [];
               for(let post of imageFiles){
@@ -82,7 +85,7 @@ export class AdvertisementManagement {
             return null;
         } catch (error) {
             throw new Error("something happend in updateAdvertisement");
-        }
+        };
     };
 
     async handleListing(advertisementId: string, query: SearchFilterSortParams): Promise<AdvertisementUseCaseResponse| null> {

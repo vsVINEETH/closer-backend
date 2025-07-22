@@ -1,7 +1,7 @@
 import mongoose, { Document } from "mongoose";
 
 // Define the interface for a Message document
-export interface chatDocument extends Document {
+export interface IChatDocument extends Document {
   sender: mongoose.Types.ObjectId;
   receiver: mongoose.Types.ObjectId;
   message: string;

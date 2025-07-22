@@ -1,9 +1,11 @@
 import { Employee } from "../../../domain/entities/Employee";
 import { IEmployeeRepository } from "../../../domain/repositories/IEmployeeRepository";
+import { EmployeeLogDTO } from "../../dtos/EmployeeDTO";
 import { IBcrypt } from "../../interfaces/IBcrypt";
 import { IToken } from "../../interfaces/IToken";
+import { IEmployeeLogUseCase } from "../../interfaces/employee/ILogUseCase";
 
-export class LogEmployee {
+export class LogEmployee implements IEmployeeLogUseCase {
     private role: string;
     constructor(
         private _employeeRepository: IEmployeeRepository,
@@ -11,7 +13,7 @@ export class LogEmployee {
         private _token: IToken,
     ) { this.role = 'employee' };
 
-    generateToken(empId: string, role: string): { accessToken: string, refreshToken: string } {
+   private _generateToken(empId: string, role: string): { accessToken: string, refreshToken: string } {
         try {
             return this._token.generateTokens(empId, role);
         } catch (error) {
@@ -19,13 +21,13 @@ export class LogEmployee {
         }
     };
 
-    async login(email: string, password: string): Promise<{ emp: Employee | null, tokens: { accessToken: string, refreshToken: string } | null, status: boolean }> {
+    async login(email: string, password: string): Promise<EmployeeLogDTO> {
         try {
             const employee = await this._employeeRepository.findByEmail(email);
             if(employee){
                 const result =  await this._bcrypt.compare(password, employee.password);
                 if (result ) {
-                    const tokens = this.generateToken(employee.id, this.role);
+                    const tokens = this._generateToken(employee.id, this.role);
 
                     return {
                         emp: employee,

@@ -1,14 +1,17 @@
 import { ISubscriptionRepository } from "../../domain/repositories/ISubscriptionRepository";
 import { IUserRepository } from "../../domain/repositories/IUserRepository";
 import { IWalletRepository } from "../../domain/repositories/IWalletRepository";
-import { SubscriptionDTO, RazorpaySubscriptionPaymentData, Prime} from "../dtos/SubscriptionDTO";
+import { SubscriptionDTO, RazorpaySubscriptionPaymentData, Prime, SubscriptionUseCaseResponse, PaymentOrderDTO, PaymentDTO} from "../dtos/SubscriptionDTO";
 import { UserDTO } from "../dtos/UserDTO";
 import { IRazorpay } from "../interfaces/IRazorpay";
 import { ISalesRepository } from "../../domain/repositories/ISalesRepository";
-import { ClientQuery} from "../../../types/express";
 import { SearchFilterSortParams, tempUserStore } from "../dtos/CommonDTO";
 import { paramToQuerySubscription } from "../../interfaces/utils/paramToQuery";
-import { toDTO, toDTOs, toEntities, toEntity } from "../mappers/SubscriptionMapper";
+import { toTransaction } from "../../infrastructure/mappers/walletDataMapper";
+import { ISubscriptionUseCase } from "../interfaces/common/ISubscriptionUseCase";
+import { toUserDTO } from "../../interfaces/mappers/userDTOMapper";
+import { toSubscriptionDTO, toSubscriptionDTOs } from "../../interfaces/mappers/subscriptionDTOMapper";
+
 export enum SaleType {
     SUBSCRIPTION = 'subscription',
     EVENT = 'event'
@@ -16,32 +19,54 @@ export enum SaleType {
 
 const paymentInProgress: { [key: string]: boolean } = {};
 
-export class SubscriptionManagement {
+export class SubscriptionManagement implements ISubscriptionUseCase {
     constructor(
-        private subscriptionRepository: ISubscriptionRepository,
-        private razorpay: IRazorpay,
-        private userRepository: IUserRepository,
-        private walletRepository: IWalletRepository,
-        private salesRepository: ISalesRepository
-    ) { }
+        private _subscriptionRepository: ISubscriptionRepository,
+        private _razorpay: IRazorpay,
+        private _userRepository: IUserRepository,
+        private _walletRepository: IWalletRepository,
+        private _salesRepository: ISalesRepository
+    ) { };
 
 
+    private async _fetchAndEnrich(query?: SearchFilterSortParams): Promise<SubscriptionUseCaseResponse> {
+        try {
 
-    private async setPrimeData(planType: string, userId: string, billedAmount: number): Promise<Prime> {
+            if(query){
+                const queryResult = await paramToQuerySubscription(query);
+                const total = await this._subscriptionRepository.countDocs(queryResult.query);
+                const subscriptions = await this._subscriptionRepository.findAll(
+                    queryResult.query,
+                    queryResult.sort,
+                    queryResult.skip,
+                    queryResult.limit
+                );
+
+                return { subscription: toSubscriptionDTOs(subscriptions)  ?? [], total: total ?? 0 }
+            };
+            const total = await this._subscriptionRepository.countDocs({});
+            const subscriptions = await this._subscriptionRepository.findAll();
+            return { subscription: toSubscriptionDTOs(subscriptions) ?? [], total: total ?? 0 };  
+        } catch (error) {
+            throw new Error('Something happend fetchAndEnrich')
+        };
+    };
+
+    private async _setPrimeData(planType: string, userId: string, billedAmount: number): Promise<Prime> {
         try {
             const startDate = new Date();
             let endDate: Date | null = null;
 
             if (planType === "monthly") {
                 endDate = new Date();
-                endDate.setMonth(startDate.getMonth() + 1); // Add 1 month
+                endDate.setMonth(startDate.getMonth() + 1); 
             } else if (planType === "yearly") {
                 endDate = new Date();
-                endDate.setFullYear(startDate.getFullYear() + 1); // Add 1 year
+                endDate.setFullYear(startDate.getFullYear() + 1);
             } else if (planType === "weekly") {
                 endDate = new Date();
-                endDate.setDate(startDate.getDate() + 7); // Add 7 days
-            }
+                endDate.setDate(startDate.getDate() + 7);
+            };
 
             const primeData = {
                 id: userId,
@@ -49,178 +74,114 @@ export class SubscriptionManagement {
                 startDate: startDate,
                 endDate: endDate,
                 billedAmount,
-                
-            }
-            return primeData
+            };
+
+            return primeData;
         } catch (error) {
             throw new Error('something happend in setPrimeData')
-        }
+        };
+    };
 
-    }
-
-
-    private async cashBack(userId: string, amount: number): Promise<number | void> {
+    private async _cashBack(userId: string, amount: number): Promise<number | void> {
         try {
-            const userDetails = await this.userRepository.findById(userId);
+            const userDetails = await this._userRepository.findById(userId);
             let cashBackPercentage = 0;
 
             if (userDetails?.prime) {
                 cashBackPercentage = userDetails.prime.primeCount === 1 ? 10 : 0;
-            }
-
-            if (cashBackPercentage) {
-
-                const cashBack = parseFloat(((amount * cashBackPercentage) / 100).toFixed(2));
-               
-                // await this.walletRepository.addMoney(userId, cashBack, '10% cash back')
-                return cashBack;
-            }
-            return
-        } catch (error) {
-            throw new Error('something happend in cashBack')
-        }
-
-    }
-
-    async fetchData(options?: SearchFilterSortParams): Promise<{subscription: SubscriptionDTO[], total: number} | null> {
-        try {
-
-            let subscriptions;
-            let total;
-
-            if(options){
-                const queryResult = await paramToQuerySubscription(options);
-                total = await this.subscriptionRepository.countDocs(queryResult.query)
-
-                subscriptions = await this.subscriptionRepository.findAll(
-                    queryResult.query,
-                    queryResult.sort,
-                    queryResult.skip,
-                    queryResult.limit
-                );
-            } else {
-             subscriptions = await this.subscriptionRepository.findAll();
-               total = await this.subscriptionRepository.countDocs({})
             };
 
-            let subscriptionEntity = toEntities(subscriptions);
-            if(subscriptionEntity === null) return null;
+            if (cashBackPercentage) {
+                const cashBack = parseFloat(((amount * cashBackPercentage) / 100).toFixed(2));
+                const walletData = toTransaction({amount: cashBack, description:'10% cash back', paymentType:'credit' })
+                await this._walletRepository.updateTransaction(userId, walletData);
+                return cashBack;
+            };
+            return 0;
+        } catch (error) {
+            throw new Error('something happend in cashBack');
+        };
+    };
 
-            let subscriptionData = toDTOs(subscriptionEntity);
-            return subscriptionData ? {subscription: subscriptionData.subscriptions, total: total ?? 0} : null
+    async fetchData(options?: SearchFilterSortParams): Promise<SubscriptionUseCaseResponse | null> {
+        try {
+            const subscriptions = await this._fetchAndEnrich(options);
+            return subscriptions ?? null;
         } catch (error) {
             throw new Error('something happend in fetchData')
-        }
+        };
+    };
 
-    }
-
-    async handleListing(subscriptionId: string, query: SearchFilterSortParams): Promise<{subscription: SubscriptionDTO[], total: number}| null> {
+    async handleListing(subscriptionId: string, query: SearchFilterSortParams): Promise<SubscriptionUseCaseResponse| null> {
         try {
-            const subscription = await this.subscriptionRepository.findById(subscriptionId);
+            const subscription = await this._subscriptionRepository.findById(subscriptionId);
 
-            if(subscription === null) return null;
-            const subscriptionEntity = toEntity(subscription);
-
-            if(subscriptionEntity === null) return null;
-            const subsData = toDTO(subscriptionEntity);
-
-            if (subsData) {
+            if (subscription) {
                 const status = !subscription.isListed;
-                const result = await this.subscriptionRepository.listById(subscriptionId, status);
+                const result = await this._subscriptionRepository.listById(subscriptionId, status);
 
                 if (result) {
-                    const queryResult = await paramToQuerySubscription(query);
-                    const subsDocCount = await this.subscriptionRepository.countDocs(queryResult.query);
-                    const subscriptions = await this.subscriptionRepository.findAll(
-                        queryResult.query,
-                        queryResult.sort,
-                        queryResult.skip,
-                        queryResult.limit
-                    );
-                    let subscriptionEntity = toEntities(subscriptions);
-                    if(subscriptionEntity === null) return null;
-
-                    let subscriptionData = toDTOs(subscriptionEntity);
-
-                    return subscriptionData ? {subscription: subscriptionData.subscriptions, total: subsDocCount ?? 0} : null
-                }
-            }
+                    const subscriptions = await this._fetchAndEnrich(query);
+                    return subscriptions;
+                };
+            };
             return null;
         } catch (error) {
             throw new Error('something happend in handleListing')
-        }
-    }
+        };
+    };
 
-    async update(subscriptionId: string, field: string, value: string, query: SearchFilterSortParams): Promise<{subscription: SubscriptionDTO[], total: number}| null> {
+    async update(subscriptionId: string, field: string, value: string, query: SearchFilterSortParams): Promise<SubscriptionUseCaseResponse| null> {
         try {
             const updateData = { [field]: parseInt(value) };
-            const subscription = await this.subscriptionRepository.updateById(subscriptionId, updateData);
+            const subscription = await this._subscriptionRepository.update(subscriptionId, updateData);
 
             if (subscription) {
-                const queryResult = await paramToQuerySubscription(query);
-                const subsDocCount = await this.subscriptionRepository.countDocs(queryResult.query);
-                const subscriptions = await this.subscriptionRepository.findAll(
-                    queryResult.query,
-                    queryResult.sort,
-                    queryResult.skip,
-                    queryResult.limit
-                );
-                    let subscriptionEntity = toEntities(subscriptions);
-                    if(subscriptionEntity === null) return null;
-                    let subscriptionData = toDTOs(subscriptionEntity);
-
-                return subscriptionData ? {subscription: subscriptionData.subscriptions, total: subsDocCount ?? 0} : null }
+                const subscriptions = await this._fetchAndEnrich(query);
+                return subscriptions;
+            };
             return null;
         } catch (error) {
-            throw new Error('something happend in update')
-        }
-
+            throw new Error('something happend in update');
+        };
     };
 
     async selectedPlan(subscriptionId: string): Promise<SubscriptionDTO | null> {
         try {
-            const subscription = await this.subscriptionRepository.findById(subscriptionId);
-            if(subscription === null) return null;
-            const subscriptionEntity = toEntity(subscription);
-
-            if(subscriptionEntity === null) return null;
-            const subsData = toDTO(subscriptionEntity);
-            tempUserStore[subscriptionId] = subsData
-            return subsData;
+            const subscription = await this._subscriptionRepository.findById(subscriptionId);
+            tempUserStore[subscriptionId] = subscription
+            return subscription ? toSubscriptionDTO(subscription): null;
 
         } catch (error) {
             throw new Error('something happend in selectedPlan')
-        }
+        };
+    };
 
-    }
-
-    async createOrder(paymentOrderData: {amount: number, currency: string, userId: string, isPrime: boolean}): Promise<boolean | null | string > {
+    async createOrder(paymentOrderData: PaymentOrderDTO): Promise<boolean | null | string > {
         const { amount, currency, userId, isPrime } = paymentOrderData;
         try {
 
             if (paymentInProgress[userId] || isPrime) {
                 return null;
             };
-
             paymentInProgress[userId] = true;
-            return await this.razorpay.createOrder(amount, currency);
-       
+            return await this._razorpay.createOrder(amount, currency);
         } catch (error) {
             throw new Error('something happend in createOrder')
-        }
-    }
+        };
+    };
 
     async abortPayment(userId: string): Promise<boolean> {
         try {
             if(paymentInProgress[userId]){
                 paymentInProgress[userId] = false;
-                return true
+                return true;
             }
-            return false
+            return false;
         } catch (error) {
            throw new Error('something happend in abortPayment');
-        }
-    }
+        };
+    };
 
     async verifyPayment(razorpaySubscriptionPaymentData: RazorpaySubscriptionPaymentData): Promise<UserDTO | null> {
         try {
@@ -228,16 +189,16 @@ export class SubscriptionManagement {
                     userId, planType, amount, planId 
                   } = razorpaySubscriptionPaymentData;
 
-            const isValid = await this.razorpay.verifyPayment({
+            const isValid = await this._razorpay.verifyPayment({
                 orderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
                 signature: razorpay_signature,
             });
             if (!isValid) { return null }
 
-            const primeData = await this.setPrimeData(planType, userId, (amount / 100));
-            const result = await this.userRepository.updatePrimeById(userId, primeData );
-            await this.salesRepository.create({
+            const primeData = await this._setPrimeData(planType, userId, (amount / 100));
+            const user = await this._userRepository.updatePrimeById(userId, primeData );
+            await this._salesRepository.create({
                 userId,
                 subscriptionId: planId,
                 saleType: SaleType.SUBSCRIPTION,
@@ -245,38 +206,38 @@ export class SubscriptionManagement {
                 planType,
             });
 
-          //  await this.cashBack(userId, amount);
+            await this._cashBack(userId, amount);
             paymentInProgress[userId] = false;
 
-            if (!result) { return null }
-
-            return result
+            if (!user) return null;
+            
+            return user ? toUserDTO(user): null;
         } catch (error) {
             throw new Error('something happend in  verifyPayment')
-        }
+        };
+    };
 
-    }
-
-    async paymentUsingWallet(paymentData: {userId: string, planType: string, amount: number, planId: string}): Promise<UserDTO | null> {
+    async paymentUsingWallet(paymentData: PaymentDTO): Promise<UserDTO | null> {
         try {
             const { userId, planType, amount,planId  } = paymentData;
 
-            const primeData = await this.setPrimeData(planType, userId, amount);
-            const result = await this.userRepository.updatePrimeById(userId, primeData);
-            await this.salesRepository.create({
+            const primeData = await this._setPrimeData(planType, userId, amount);
+            const result = await this._userRepository.updatePrimeById(userId, primeData);
+           
+            await this._salesRepository.create({
                 userId,
                 subscriptionId: planId,
                 saleType: SaleType.SUBSCRIPTION,
                 billedAmount: amount ,
                 planType,
             });
-          //  await this.cashBack(userId, amount);
+
+            await this._cashBack(userId, amount);
 
             if (!result) { return null }
-            return result;
+            return result ? toUserDTO(result) : null;
         } catch (error) {
             throw new Error('something happend in   paymentUsingWallet');
-        }
+        };
     };
-
-}
+};

@@ -1,19 +1,14 @@
 import { Content } from "../entities/Content";
-import { DashboardData } from "../../usecases/dtos/ContentDTO";
 import { SortOrder } from "../../infrastructure/config/database";
-import { Filter } from "../../../types/express/index";
 import { ContentPersistanceType, ContentUpdateType } from "../../infrastructure/types/ContentType";
 import { VoteUpdateOptions, SharesUpdateOptions, FilterMatchType } from "../../usecases/types/ContentTypes";
 import { TotalContent, MostLiked, MostShared, RecentContent, TrendingContent, PopularCategory } from "../../usecases/dtos/ContentDTO";
 export interface IContentRepository {
-    findAll<T>(query?: Record<string, T>, sort?:{ [key: string]: SortOrder } , skip?: number, limit?: number): Promise<Content[]| null>;
+    findAllAndPopulate<T>(query?: Record<string, T>, sort?:{ [key: string]: SortOrder } , skip?: number, limit?: number): Promise<Content[]| null>;
     findById(contentId: string): Promise<Content | null>;
-
     countDocs<T>(query: Record<string, T> ): Promise<number>;
-    
-    create(contentData: ContentPersistanceType): Promise<boolean>;
-    update(updateContentData: ContentUpdateType): Promise<boolean>;
-
+    create(contentData: ContentPersistanceType): Promise<Content>;
+    update(contentId: string, updatedContentData: ContentUpdateType): Promise<Content | null>;
     listById(contentId: string, status: boolean): Promise<boolean | null>
     deleteById(contentId: string): Promise<boolean | null>
     voteById(blogId: string, options: VoteUpdateOptions): Promise<boolean | null>

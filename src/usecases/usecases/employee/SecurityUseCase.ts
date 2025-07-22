@@ -1,32 +1,13 @@
 import { IEmployeeRepository } from "../../../domain/repositories/IEmployeeRepository";
-import { EmployeeDTO, OtpDTO, passwordDTO } from "../../dtos/EmployeeDTO";
+import { passwordDTO } from "../../dtos/EmployeeDTO";
 import { IBcrypt } from "../../interfaces/IBcrypt";
-import { IToken } from "../../interfaces/IToken";
-import { IOtp } from "../../interfaces/IOtp";
-import { IMailer } from "../../interfaces/IMailer";
-import { tempEmployeeStore } from "../../dtos/CommonDTO";
-import { toDTO, toEntity } from "../../mappers/EmployeeMapper";
-export class Security {
+import { IEmployeeSecurityUseCase } from "../../interfaces/employee/ISecurityUseCase";
+
+export class Security implements IEmployeeSecurityUseCase {
   constructor(
     private _employeeRepository: IEmployeeRepository,
     private _bcrypt: IBcrypt,
-    private _token: IToken,
-    private _OTP: IOtp,
-    private _mailer: IMailer
-  ) { }
-
-  otpExpireation(email: string) {
-    try {
-      setTimeout(() => {
-        if (tempEmployeeStore[email]) {
-          delete tempEmployeeStore[email].otp;
-          console.log(`OTP for ${email} has expired and been removed.`);
-        }
-      }, 60000);
-    } catch (error) {
-      throw new Error("something happend in otpExpireation");
-    }
-  };
+  ) {}
 
   async changePassword(employeeId: string, newPasswordData: passwordDTO): Promise<boolean | null> {
     try {
@@ -36,11 +17,10 @@ export class Security {
 
         if(result){
           const hashedPassword = await this._bcrypt.Encrypt(newPasswordData.newPassword);
-          await this._employeeRepository.updatePassword(
+          await this._employeeRepository.update(
             employee.id,
-            hashedPassword
+            {password: hashedPassword}
           );
-
           return true;
         }; 
       };
@@ -48,6 +28,6 @@ export class Security {
       return false;
     } catch (error) {
       throw new Error("something happend in changePassword");
-    }
-  }
-}
+    };
+  };
+};

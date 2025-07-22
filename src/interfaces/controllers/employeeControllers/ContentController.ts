@@ -1,29 +1,23 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { SearchFilterSortParams } from "../../../usecases/dtos/CommonDTO";
-
-//helper methods and utils
 import { paramsNormalizer } from "../../utils/filterNormalizer";
-
 import { contentUseCases } from "../../../di/general.di";
 import { categoryUseCase } from "../../../di/employee.di";
-
+import { ICategoryUseCase } from "../../../usecases/interfaces/employee/ICategoryUseCase";
+import { IContentUseCase } from "../../../usecases/interfaces/employee/IContentUseCase";
+import { imageFileNormalizer } from "../../utils/imageFileNormalizer";
 export class EmployeeContentController {
 
     constructor(
-      private _contentUseCase = contentUseCases,
-      private _categoryUseCase = categoryUseCase,
+      private _contentUseCase : IContentUseCase,
+      private _categoryUseCase : ICategoryUseCase,
     ){}
 
     createContent = async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const imageFiles = req.files && "images" in req.files 
-          ? (req.files as { images: Express.Multer.File[] }).images 
-          : [];
-
+        const imageFiles = imageFileNormalizer(req.files);
         const contentData = req.body;
         const filterOptions: SearchFilterSortParams  = await paramsNormalizer(req.query);
         const result = await this._contentUseCase.createContent(contentData, filterOptions, imageFiles);
@@ -32,50 +26,50 @@ export class EmployeeContentController {
         if (result) {
           res.status(HttpStatus.OK).json({ message: ResponseMessages.CREATED_SUCCESSFULLY, data:result, category: category});
           return;
-        }
+        };
+        
         res.status(HttpStatus.BAD_GATEWAY).json({ message: ResponseMessages.FAILED_TO_CREATE});
         return;
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
     fetchContentData = async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const filterOptions: SearchFilterSortParams  = await paramsNormalizer(req.query);
+          const filterOptions: SearchFilterSortParams  = await paramsNormalizer(req.query);
 
-        const result = await this._contentUseCase.fetchContentData(filterOptions);
-        const category = await this._categoryUseCase.fetchCategoryData();
-    
-        if (result && category) {
-          res.status(HttpStatus.OK).json({data:result, category: category});
+          const result = await this._contentUseCase.fetchContentData(filterOptions);
+          const category = await this._categoryUseCase.fetchCategoryData();
+      
+          if (result && category) {
+            res.status(HttpStatus.OK).json({data:result, category: category});
+            return;
+          };
+          res.status(HttpStatus.NO_CONTENT).json({ message: ResponseMessages.NO_CONTENT_OR_DATA});
           return;
-        }
-        res.status(HttpStatus.NO_CONTENT).json({ message: ResponseMessages.NO_CONTENT_OR_DATA});
-        return;
       } catch (error) {
-        next(error)
-      }
+          next(error);
+      };
     };
 
 
     handleContentListing = async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const contentId = req.body.id;
-        const filterOptions: SearchFilterSortParams  = await paramsNormalizer(req.query);
-        const result = await this._contentUseCase.handleListing(contentId, filterOptions);
-        const category = await this._categoryUseCase.fetchCategoryData();
-    
-        if (result) {
-          res.status(HttpStatus.OK).json({data:result, category: category});
+          const contentId = req.body.id;
+          const filterOptions: SearchFilterSortParams  = await paramsNormalizer(req.query);
+          const result = await this._contentUseCase.handleListing(contentId, filterOptions);
+          const category = await this._categoryUseCase.fetchCategoryData();
+      
+          if (result) {
+            res.status(HttpStatus.OK).json({data:result, category: category});
+            return;
+          }
+          res.status(HttpStatus.BAD_REQUEST).json({ message: ResponseMessages.INVALID_ID });
           return;
-        }
-        res.status(HttpStatus.BAD_REQUEST).json({ message: ResponseMessages.INVALID_ID });
-        return;
       } catch (error) {
-        next(error)
-      }
-    
+        next(error);
+      };
     };
 
 
@@ -112,6 +106,6 @@ export class EmployeeContentController {
         next(error)
       }
     };
-}
+};
 
-export const employeeContentController = new EmployeeContentController();
+export const employeeContentController = new EmployeeContentController(contentUseCases, categoryUseCase);

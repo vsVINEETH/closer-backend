@@ -1,21 +1,19 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
 import { setCookieOptions } from "../../utils/sessionCookie";
-
 import { logEmployeeUseCase, securityUseCase } from "../../../di/employee.di";
-
 import { toEmployeeDTO } from "../../mappers/employeeDTOMapper";
+
+import { IEmployeeLogUseCase } from "../../../usecases/interfaces/employee/ILogUseCase";
+import { IEmployeeSecurityUseCase } from "../../../usecases/interfaces/employee/ISecurityUseCase";
 
 export class EmployeeAuthController {
 
     constructor(
-    private _logUseCase = logEmployeeUseCase,
-    private _securityUseCase = securityUseCase,
-
+    private _logUseCase : IEmployeeLogUseCase,
+    private _securityUseCase : IEmployeeSecurityUseCase,
     ){}
-
 
     login = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -35,8 +33,8 @@ export class EmployeeAuthController {
             return
             }
         } catch (error) {
-            next(error)
-        }
+            next(error);
+        };
     };
     
     changePassword = async (req: Request, res: Response, next: NextFunction) => {
@@ -67,4 +65,4 @@ export class EmployeeAuthController {
     };
 };
 
-export const employeeAuthController = new EmployeeAuthController();
+export const employeeAuthController = new EmployeeAuthController(logEmployeeUseCase, securityUseCase);

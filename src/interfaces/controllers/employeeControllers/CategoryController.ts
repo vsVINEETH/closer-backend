@@ -1,15 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { paramsNormalizer } from "../../utils/filterNormalizer";
-
 import { categoryUseCase } from "../../../di/employee.di";
-
+import { ICategoryUseCase } from "../../../usecases/interfaces/employee/ICategoryUseCase";
 export class EmployeeCategoryController {
     constructor(
-      private _categoryUseCase = categoryUseCase,
+      private _categoryUseCase : ICategoryUseCase,
     ){};
 
     fetchCategoryData = async (req: Request, res: Response, next: NextFunction) => {
@@ -80,4 +77,4 @@ export class EmployeeCategoryController {
     };
 };
 
-export const employeeCategoryController = new EmployeeCategoryController();
+export const employeeCategoryController = new EmployeeCategoryController(categoryUseCase);

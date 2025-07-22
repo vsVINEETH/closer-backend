@@ -5,8 +5,8 @@ export interface IAdvertisementRepository {
     findAll<T>(query?: Record<string, T>, sort?:{ [key: string]: SortOrder } , skip?: number, limit?: number): Promise< Advertisement[] | null>,
     countDocs<T>(query: Record<string, T>): Promise<number>
     findById(advertisementId: string): Promise<Advertisement | null>;
-    create(advertisementData:  AdvertisementPersistenceType): Promise<boolean>;
-    update(adId: string, advertisementData: AdvertisementUpdateType): Promise<boolean>
+    create(advertisementData:  AdvertisementPersistenceType): Promise<Advertisement>;
+    update(adId: string, advertisementData: AdvertisementUpdateType): Promise<Advertisement | null>
     listById(advertisementId: string, advertisementStatus: boolean): Promise<boolean | null>
     deleteById(advertisementId: string): Promise<boolean | null>
 };

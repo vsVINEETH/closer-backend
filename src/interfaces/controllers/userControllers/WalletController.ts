@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { eventUseCase, subscriptionUseCases } from "../../../di/general.di";
 import { walletUseCases } from "../../../di/user.di";
 

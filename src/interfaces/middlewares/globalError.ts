@@ -7,7 +7,6 @@ interface CustomError extends Error {
 }
 
 const errorMiddleware = (err: CustomError, req: Request, res: Response, next: NextFunction): void => {
-  console.error(err.stack);
 
   const statusCode = err.status || HttpStatus.INTERNAL_SERVER_ERROR;
   const message = err.message || ResponseMessages.INTERNAL_SERVER_ERROR;

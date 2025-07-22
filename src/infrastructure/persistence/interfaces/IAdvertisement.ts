@@ -1,5 +1,6 @@
 import { Document } from "mongoose";
-export interface AdvertisementDocument extends Document {
+
+export interface IAdvertisementDocument extends Document {
     title: string,
     subtitle: string,
     content: string,

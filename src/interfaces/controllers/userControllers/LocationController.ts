@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { commonUserUseCase } from "../../../di/user.di";
 
 export class LocationController {
@@ -16,8 +14,8 @@ export class LocationController {
         const {locationData, userId} = req.body;
         const result = await this._commonUseCase.updateUserLocation(userId, locationData)
         if(result){
-          res.status(HttpStatus.OK).json(result)
-          return
+          res.status(HttpStatus.OK).json(result);
+          return;
         };
 
         res.status(HttpStatus.NOT_ACCEPTABLE).json({message: ResponseMessages.FAILED_TO_UPDATE})

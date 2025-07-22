@@ -1,6 +1,7 @@
 import { Document, Types } from "mongoose";
 export {Types}
-export interface ContentDocument extends Document {
+
+export interface IContentDocument extends Document {
     title: string,
     subtitle: string,
     content: string,

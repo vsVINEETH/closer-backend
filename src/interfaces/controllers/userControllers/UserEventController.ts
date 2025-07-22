@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { eventUseCase } from "../../../di/general.di";
 import { salesUseCases } from "../../../di/admin.di";
 
@@ -42,7 +40,7 @@ export class UserEventController {
             return;
         } catch (error) {
         next(error)
-        }
+        };
     };
 
 
@@ -59,8 +57,8 @@ export class UserEventController {
         res.status(HttpStatus.NOT_ACCEPTABLE).json({message: ResponseMessages.FAILED_TO_CREATE_ORDER});
         return
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
 
@@ -75,8 +73,8 @@ export class UserEventController {
         res.status(HttpStatus.BAD_REQUEST).json({message: ResponseMessages.INVALID_PAYMENT_SIGNATURE});
         return
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
 
@@ -91,8 +89,8 @@ export class UserEventController {
         res.status(HttpStatus.BAD_REQUEST).json({Message: ResponseMessages.FALIED_TO_ABORT_PAYMENT});
         return;
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 };
 

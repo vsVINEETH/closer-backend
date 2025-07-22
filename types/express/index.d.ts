@@ -91,11 +91,22 @@ export interface Preferences {
   ageRange?: [number, number] | string | [string, string];
   distance?: number | string;
   lookingFor?: string;
+
+};
+
+export type DOBRange = {
+  minDob: Date | undefined,
+  maxDob: Date | undefined
 };
 
 export interface Filter {
   startDate: string,
   endDate: string ,
+};
+
+export type DateRange = {
+  startDate: Date,
+  endDate: Date ,
 }
 
 

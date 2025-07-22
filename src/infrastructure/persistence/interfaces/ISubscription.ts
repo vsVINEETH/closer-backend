@@ -5,7 +5,7 @@ enum PlanType {
     Monthly = 'monthly',
     Yearly = 'yearly'
 }
-export interface SubscriptionDocument extends Document {
+export interface ISubscriptionDocument extends Document {
     planType:string,
     price: number,
     isListed: boolean,

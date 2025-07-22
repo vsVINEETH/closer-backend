@@ -1,5 +1,5 @@
 import  mongoose,{ Schema } from "mongoose";
-import { ContentDocument } from "../interfaces/IContentModel";
+import { IContentDocument } from "../interfaces/IContentModel";
 
 const ContentSchema: Schema = new Schema ({
     title:{type: String},
@@ -15,4 +15,4 @@ const ContentSchema: Schema = new Schema ({
     timestamps: true
 });
 
-export const ContentModel = mongoose.model<ContentDocument>('content', ContentSchema)
+export const ContentModel = mongoose.model<IContentDocument>('content', ContentSchema)

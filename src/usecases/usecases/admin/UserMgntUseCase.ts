@@ -1,111 +1,104 @@
 import { Filter } from "../../../../types/express/index";
 import { IUserRepository } from "../../../domain/repositories/IUserRepository";
 import { SearchFilterSortParams } from "../../dtos/CommonDTO";
-import { UserDTO } from "../../dtos/UserDTO";
+import { UserDashBoardData, UserDashBoardDTO } from "../../dtos/UserDTO";
 import { paramToQueryUsers } from "../../../interfaces/utils/paramToQuery";
-export class UserManagement {
+import { UserUseCaseResponseType } from "../../../infrastructure/types/UserType";
+import { toDashboardDTO, toUserListingDTO } from "../../../interfaces/mappers/userDTOMapper";
+import { dateRangeSetter } from "../../../interfaces/utils/dateRangeSetter";
+import { IUserManagementUseCase } from "../../interfaces/admin/IUserMgntUseCase";
+
+export class UserManagement implements IUserManagementUseCase{
   constructor(
     private _userRepository: IUserRepository
   ) { }
 
-  async fetchData(options: SearchFilterSortParams): Promise<{users: UserDTO[], total: number }| null> {
-    try {
-       const queryResult = await paramToQueryUsers(options);
-       const usersData = await this._userRepository.findAll(
-        queryResult.query,
-        queryResult.sort,
-        queryResult.skip,
-        queryResult.limit
-       );
+    private async _fetchAndEnrich(query: SearchFilterSortParams): Promise<UserUseCaseResponseType> {
+        try {
+            const queryResult = await paramToQueryUsers(query);
+       
+            const total = await this._userRepository.countDocs(queryResult.query);
+            const users = await this._userRepository.findAll(
+                queryResult.query,
+                queryResult.sort,
+                queryResult.skip,
+                queryResult.limit
+            );
 
-      return usersData ? {users: usersData.users, total: usersData.total } : null;
+            const userListingData = users ? toUserListingDTO(users) : [];
+
+            return { users: userListingData, total: total ?? 0 };  
+        } catch (error) {
+            throw new Error('Something happend fetchAndEnrich')
+        };
+    };
+
+  async fetchData(options: SearchFilterSortParams): Promise<UserUseCaseResponseType| null> {
+    try {
+       const usersData = await this._fetchAndEnrich(options);
+       return usersData ?? null;
     } catch (error) {
       throw new Error('something happend in fetchData')
     }
+  };
 
-  }
-
-  async blockUser(userId: string, query: SearchFilterSortParams): Promise<{users: UserDTO[], total: number }| null> {
+  async blockUser(userId: string, query: SearchFilterSortParams): Promise<UserUseCaseResponseType| null> {
     try {
-      const user = await this._userRepository.findById(userId);
-      if (user) {
+       const user = await this._userRepository.findById(userId);
+       if (user) {
         const status: boolean = !user.isBlocked;
-
         const result = await this._userRepository.blockById(userId, status);
+        
         if (result) {
-          const queryResult = await paramToQueryUsers(query);
-          const usersData = await this._userRepository.findAll(
-            queryResult.query,
-            queryResult.sort,
-            queryResult.skip,
-            queryResult.limit
-          );
-
-          return usersData ?  {users: usersData.users, total: usersData.total } : null;
-        }
-
-      }
-
+          const userData = await this._fetchAndEnrich(query);
+          return userData ?? null;
+        };
+      };
       return null;
     } catch (error) {
       throw new Error('something happend blockUser')
-    }
+    };
+  };
 
-  }
-
-  async banUser(userId: string, duration: string, query: SearchFilterSortParams): Promise<{users: UserDTO[], total: number } | null> {
+  async banUser(userId: string, duration: string, query: SearchFilterSortParams): Promise<UserUseCaseResponseType | null> {
     try {
-      const banExpireAt = new Date();
-      banExpireAt.setDate(banExpireAt.getDate() + parseInt(duration));
-      const result = await this._userRepository.banById(userId, banExpireAt);
-      if (result) {
-        const queryResult = await paramToQueryUsers(query);
-        const usersData = await this._userRepository.findAll(
-          queryResult.query,
-          queryResult.sort,
-          queryResult.skip,
-          queryResult.limit
-        );
+     
+        const banExpireAt = new Date();
+        banExpireAt.setDate(banExpireAt.getDate() + parseInt(duration));
+        const result = await this._userRepository.banById(userId, banExpireAt);
 
-        return usersData ?  {users: usersData.users, total: usersData.total } : null;
-      }
+        if (result) {
+          const usersData = await this._fetchAndEnrich(query);
+          return usersData ?? null;
+        };
 
-      return null
+        return null;
     } catch (error) {
       throw new Error('something happend in banUser')
-    }
+    };
+  };
 
-  }
-
-  async unBanUser(userId: string, query: SearchFilterSortParams): Promise<{users: UserDTO[], total: number }| null> {
+  async unBanUser(userId: string, query: SearchFilterSortParams): Promise<UserUseCaseResponseType| null> {
     try {
       const user = await this._userRepository.unBanById(userId);
       if (user) {
-        const queryResult = await paramToQueryUsers(query);
-        const usersData = await this._userRepository.findAll(
-          queryResult.query,
-          queryResult.sort,
-          queryResult.skip,
-          queryResult.limit
-        );
-
-        return usersData ?  {users: usersData.users, total: usersData.total } : null;
-      }
-      return null
+        const usersData = await this._fetchAndEnrich(query);
+        return usersData ?? null;
+      };
+      return null;
     } catch (error) {
       throw new Error('something happend in unBanUser')
-    }
+    };
+  };
 
-  }
-
-  async dashboardUserData(filterConstraints: Filter ): Promise<unknown> {
+  async dashboardUserData(filterConstraints: Filter ): Promise<UserDashBoardDTO> {
     try {
-      
-      const result = await this._userRepository.dashboardData(filterConstraints);
-      if(!result){ return null}
-      return result;
+      const formatedDate = dateRangeSetter(filterConstraints);
+      const result = await this._userRepository.dashboardData(formatedDate);
+      return toDashboardDTO(result);
     } catch (error) {
       throw new Error('something happend in dashboardUserData')
-    }
-  }
-}
+    };
+  };
+
+};

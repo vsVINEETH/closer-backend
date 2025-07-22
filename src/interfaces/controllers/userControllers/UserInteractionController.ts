@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
 import { commonUserUseCase, notificationUseCases } from "../../../di/user.di";
 
 export class UserInteractionController {
@@ -23,15 +21,17 @@ export class UserInteractionController {
         res.status(HttpStatus.NO_CONTENT).json({message: ResponseMessages.NO_CONTENT_OR_DATA});
         return;
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
     handleInterestRequest = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { userId, interactorId, status} = req.body;
         const notificationId = req.body.id;
+
         await  this._notificationUseCase.removeNotification(notificationId);
+
         if(status){
           const result = await this._commonUseCase.handleInterest(userId, interactorId);
           if(result){
@@ -44,20 +44,19 @@ export class UserInteractionController {
         }else{
           res.status(HttpStatus.ACCEPTED).json({message: ResponseMessages.FAILED_TO_MATCH});
           return;
-        }
+        };
         
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
 
     fetchMatches = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userId = req.query.id as string;
-
         const result = await this._commonUseCase.fetchMatches(userId);
-        console.log(result)
+
         if(result){
           res.status(HttpStatus.OK).json(result);
           return;
@@ -65,8 +64,8 @@ export class UserInteractionController {
         res.status(HttpStatus.NO_CONTENT).json({message: ResponseMessages.NO_CONTENT_OR_DATA})
         return
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
 
@@ -81,10 +80,9 @@ export class UserInteractionController {
         }
         res.status(HttpStatus.NOT_ACCEPTABLE).json({message: ResponseMessages.FAILED_TO_UNMATCH});
       } catch (error) {
-        next(error)
-      }
-    };
-    
+        next(error);
+      };
+    };  
 };
 
 export const userInteractionController = new UserInteractionController();

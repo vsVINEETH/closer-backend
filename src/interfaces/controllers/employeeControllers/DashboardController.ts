@@ -1,43 +1,20 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
-//types
 import { SearchFilterSortParams } from "../../../usecases/dtos/CommonDTO";
-import { ParsedQs } from "../../../../types/express";
-
 import { contentUseCases } from "../../../di/general.di";
+import { IContentUseCase } from "../../../usecases/interfaces/employee/IContentUseCase";
+import { paramsNormalizer } from "../../utils/filterNormalizer";
 
 export class EmployeeDashboardController {
 
        constructor(
-        private _contentUseCase = contentUseCases
+        private _contentUseCase: IContentUseCase
        ){};
-
-       private paramsNormalizer = async (query: ParsedQs ) => {
-          try {
-    
-            const filterOptions: SearchFilterSortParams = {
-              search: query.search as string,
-              startDate: query.startDate as string,
-              endDate: query.endDate as string,
-              status: query.status === undefined ? undefined : query.status === 'true', // Convert string to boolean
-              sortColumn: query.sortColumn as string,
-              sortDirection: query.sortDirection as string,
-              page: query.page ? Number(query.page) : 0, // Convert to number
-              pageSize: query.pageSize ? Number(query.pageSize) :0,
-            };
-    
-            return filterOptions;
-          } catch (error) {
-           throw new Error('something went wrong') 
-          }
-        }
 
     dashboardData = async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const filterConstraints:SearchFilterSortParams = await this.paramsNormalizer(req.query);
+        const filterConstraints: SearchFilterSortParams = await paramsNormalizer(req.query);
         const result = await this._contentUseCase.getDashboardData(filterConstraints);
        
         if(result){
@@ -52,4 +29,4 @@ export class EmployeeDashboardController {
 };
 
 
-export const employeeDashboardController = new EmployeeDashboardController()
+export const employeeDashboardController = new EmployeeDashboardController(contentUseCases)

@@ -6,18 +6,6 @@ export interface Transaction  {
   updatedAt: Date;
 }
 
-  
-// export class Wallet {
-//     constructor(
-//     public id: string,
-//     public userId: string,
-//     public balance: number,
-//     public transactions: Transaction[],
-//     public createdAt: Date,
-//     public updatedAt: Date,
-//     ){}
-// };
-
 export class Wallet {
     public id: string;
     public userId: string;
@@ -42,6 +30,19 @@ export class Wallet {
       this.transactions = props.transactions,
       this.createdAt = props.createdAt,
       this.updatedAt = props.updatedAt
+    }
+
+    addTransaction(amount: number, description: string, type: 'credit' | 'debit') {
+      const finalAmount = type === 'credit' ? amount / 100 : amount;
+      this.balance += type === 'credit' ? finalAmount : -finalAmount;
+
+      this.transactions.push({
+        amount: finalAmount,
+        description,
+        paymentType: type,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     }
 
 };

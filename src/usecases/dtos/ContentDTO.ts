@@ -1,11 +1,12 @@
 import { Types } from "../../../types/express";
 import { Content } from "../../domain/entities/Content";
 
+
 export type TotalContent = {
       content: string,
       createdAt: string,
       downvotes: string[]
-      image: string[] | File[],
+      // image: string[] | File[],
       isListed: boolean,
       shares: string[]
       subtitle: string,
@@ -17,7 +18,7 @@ export type MostLiked = {
       title: string,
       subtitle: string,
       content: string,
-      image: string[] | File[],
+      // image: string[] | File[],
       upvotesCount: number,
       createdAt: string
 };
@@ -26,7 +27,7 @@ export type MostShared = {
       title: string,
       subtitle: string,
       content: string,
-      image: string[] | File[],
+      // image: string[] | File[],
       sharesCount: number,
       createdAt: string,
 };
@@ -35,7 +36,7 @@ export type RecentContent = {
       content: string,
       createdAt: string,
       downvotes: string[]
-      image: string[],
+      // image: string[],
       isListed: boolean,
       shares: string[]
       subtitle: string,
@@ -48,7 +49,7 @@ export type TrendingContent = {
       content: string,
       createdAt: string,
       downvotes: string[]
-      image: string[],
+      // image: string[],
       isListed: boolean,
       shares: string[]
       subtitle: string,

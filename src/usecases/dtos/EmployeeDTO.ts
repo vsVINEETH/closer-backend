@@ -1,3 +1,5 @@
+import { Employee } from "../../domain/entities/Employee";
+
 export interface EmployeeDTO {
     id: string;
     name: string;
@@ -27,6 +29,8 @@ export interface EmployeeAccessDTO {
     isBlocked?: boolean;
     createdAt?:string;
 }
+
+export type  EmployeeLogDTO = { emp: Employee | null, tokens: { accessToken: string, refreshToken: string } | null, status: boolean }
 
 export interface passwordDTO {
     currentPassword: string,
