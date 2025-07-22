@@ -1,86 +1,64 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
-//useCase's
-import { SubscriptionManagement } from "../../../usecases/usecases/SubscriptionUseCase";
-
-//repositories
-import { SubscriptionRepository } from "../../../infrastructure/repositories/SubscriptionRepository";
-import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
-import { WalletRepository } from "../../../infrastructure/repositories/WalletRepository";
-import { SalesRepository } from "../../../infrastructure/repositories/SalesRepository";
-
-//external services
-import { RazorpayService } from "../../../infrastructure/services/Razorpay";
 import { paramsNormalizer } from "../../utils/filterNormalizer";
-
-
+import { subscriptionUseCases } from "../../../di/general.di";
+import { ISubscriptionUseCase } from "../../../usecases/interfaces/common/ISubscriptionUseCase";
+import { mapListingSubscriptionRequest, mapUpdateSubscriptionRequest } from "../../mappers/subscriptionDTOMapper";
 export class SubscriptionManagementController {
-    private subscriptionUseCase: SubscriptionManagement;
 
-    constructor(){
-        const razorpay = new RazorpayService();
-        const subscriptionRepository = new SubscriptionRepository();
-        const userRepository = new UserRepository();
-        const walletRepository = new WalletRepository();
-        const salesRepository = new SalesRepository();
-
-        this.subscriptionUseCase = new SubscriptionManagement(subscriptionRepository, razorpay, userRepository, walletRepository, salesRepository);
-    };
+    constructor(
+        private _subscriptionUseCase : ISubscriptionUseCase
+    ){};
 
 
     fetchSubscriptionData = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const filterOptions = await paramsNormalizer(req.query)
-            const result = await this.subscriptionUseCase.fetchData(filterOptions);
+            const result = await this._subscriptionUseCase.fetchData(filterOptions);
             if(result){
                 res.status(HttpStatus.OK).json(result);
                 return;
-            }
+            };
             res.status(HttpStatus.NO_CONTENT).json({message:ResponseMessages.NO_CONTENT_OR_DATA})
         } catch (error) {
-            next(error)
-        }
+            next(error);
+        };
     };
 
 
     handleSubscriptionListing = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const subscriptionId = req.body.id;
-            const filterOptions = await paramsNormalizer(req.query)
-            const result = await this.subscriptionUseCase.handleListing(subscriptionId, filterOptions);
+            const { subscriptionId, filterOptions } = await mapListingSubscriptionRequest(req);
+            const result = await this._subscriptionUseCase.handleListing(subscriptionId, filterOptions);
             if(result){
                 res.status(HttpStatus.OK).json(result);
-                return
+                return;
             }
             res.status(HttpStatus.NOT_FOUND).json({message: ResponseMessages.FAILED_TO_UPDATE})
         } catch (error) {
             next(error)
-        }
+        };
     };
 
     updateSubscription = async (req: Request, res: Response, next: NextFunction) => {
         try {
-           const subscriptionId = req.body.id;
-           const subscriptionPrice = req.body.price;
-           const filterOptions = await paramsNormalizer(req.query)
-           const field = Object.keys(req.body).find(key => key === 'price')
+
+           const {subscriptionId, subscriptionPrice,filterOptions, field} = await mapUpdateSubscriptionRequest(req)
         
            if(field){
-            const result = await this.subscriptionUseCase.update(subscriptionId, field, subscriptionPrice, filterOptions)
+            const result = await this._subscriptionUseCase.update(subscriptionId, field, subscriptionPrice, filterOptions)
                 if(result){
                    res.status(HttpStatus.OK).json(result);
-                   return
-                }
-           }
+                   return;
+                };
+           };
           res.status(HttpStatus.NOT_FOUND).json({message: ResponseMessages.FAILED_TO_UPDATE});
-          return
+          return;
         } catch (error) {
-            next(error)
-        }
+            next(error);
+        };
     };
 };
 
-export const subscriptionManagementController = new SubscriptionManagementController()
+export const subscriptionManagementController = new SubscriptionManagementController(subscriptionUseCases)

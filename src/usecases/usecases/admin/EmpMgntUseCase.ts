@@ -1,79 +1,68 @@
-import { ClientQuery, Filter } from "../../../../types/express/index";
+import { Filter } from "../../../../types/express/index";
 import { IEmployeeRepository } from "../../../domain/repositories/IEmployeeRepository";
 import { SearchFilterSortParams } from "../../dtos/CommonDTO";
-import { EmployeeAccessDTO, EmployeeCreate, EmployeeStats } from "../../dtos/EmployeeDTO";
+import { EmployeeStats } from "../../dtos/EmployeeDTO";
 import { IBcrypt } from "../../interfaces/IBcrypt";
 import { IMailer } from "../../interfaces/IMailer";
 import { paramToQueryEmployee } from "../../../interfaces/utils/paramToQuery";
-import { toDTO, toDTOs, toEntities, toEntity, toPersistance } from "../../mappers/EmployeeMapper";
-export class EmployeeManagement {
+import { toEmployeePersistance } from "../../../infrastructure/mappers/employeeDataMapper";
+import { EmployeeUseCaseResponse } from "../../types/EmployeeTypes";
+import { IEmployeeManagementUseCase } from "../../interfaces/admin/IEmpMgntUseCase";
+import { toEmployeeDTOs } from "../../../interfaces/mappers/employeeDTOMapper";
+
+export class EmployeeManagement implements IEmployeeManagementUseCase {
     constructor(
-        private employeeRepository: IEmployeeRepository,
-        private bcrypt: IBcrypt,
-        private mailer: IMailer
+        private _employeeRepository: IEmployeeRepository,
+        private _bcrypt: IBcrypt,
+        private _mailer: IMailer
     ) { }
 
-    async fetchData(options: SearchFilterSortParams): Promise<{ employee: EmployeeAccessDTO[]; total: number } | null> {
-        try {
-           
-            const queryResult = await paramToQueryEmployee(options);
-            const employees = await this.employeeRepository.findAll(
-                queryResult.query,
-                queryResult.sort,
-                queryResult.skip,
-                queryResult.limit
-            );
-
-            const employeeEntity = toEntities(employees);
-            if(employeeEntity === null) return null;
-
-            const employeeData = toDTOs(employeeEntity)
-            console.log(employeeData)
-            if (!employeeData) return null;
-            
-            const employeeCount = await this.employeeRepository.countDocs(queryResult.query)
-            console.log(employeeCount,'helo')
-
-            return { employee: employeeData.employee, total: employeeCount };
-        } catch (error) {
-            throw new Error("something happend in fetchData");
-        }
-    };
-
-    async createEmployee(employeeName: string, email: string, query: SearchFilterSortParams): Promise<{ employee: EmployeeAccessDTO[]; total: number }| null> {
-        try {
-            const result = await this.employeeRepository.findByEmail(email);
-    
-            console.log(result)
-
-            if (!result) {
-                const password = Math.floor(100000 + Math.random() * 900000).toString();
-                console.log(password);
-                const htmlJoining = this.mailer.generateCredentialsEmailContent(
-                    email,
-                    password
-                );
-                this.mailer.SendEmail(email, "Joining Credentials", htmlJoining);
-
-                const hashedPassword = await this.bcrypt.Encrypt(password);
-                const userDataToPersist = toPersistance({name:employeeName, email, password: hashedPassword})
-
-                await this.employeeRepository.create(userDataToPersist)
-                const queryResult = await paramToQueryEmployee(query)
-                const employeesDoc = await this.employeeRepository.findAll(
+        private async _fetchAndEnrich(query: SearchFilterSortParams): Promise<EmployeeUseCaseResponse> {
+            try {
+               const queryResult = await paramToQueryEmployee(query);
+                const total = await this._employeeRepository.countDocs(queryResult.query);
+                const employees = await this._employeeRepository.findAll(
                     queryResult.query,
                     queryResult.sort,
                     queryResult.skip,
                     queryResult.limit
                 );
+    
+                return { employee: toEmployeeDTOs(employees) ?? [], total: total ?? 0 };  
+            } catch (error) {
+                throw new Error('Something happend fetchAndEnrich')
+            };
+        };
+    
 
-                const employeeEntity = toEntities(employeesDoc);
-                if(employeeEntity === null) return null;
+    async fetchData(options: SearchFilterSortParams): Promise<EmployeeUseCaseResponse | null> {
+        try {
+            const employess = await this._fetchAndEnrich(options);
+            return employess ?? null;
+        } catch (error) {
+            throw new Error("something happend in fetchData");
+        };
+    };
 
-                const employeeData = toDTOs(employeeEntity)
-                const employeeCount = await this.employeeRepository.countDocs(queryResult.query);
+    async createEmployee(employeeName: string, email: string, query: SearchFilterSortParams): Promise<EmployeeUseCaseResponse| null> {
+        try {
+            const result = await this._employeeRepository.findByEmail(email);
+    
+            if (!result) {
+                const password = Math.floor(100000 + Math.random() * 900000).toString();
+                const htmlJoining = this._mailer.generateCredentialsEmailContent(
+                    email,
+                    password
+                );
 
-                return  employeeData ? { employee: employeeData.employee, total: employeeCount } : null;
+                this._mailer.SendEmail(email, "Joining Credentials", htmlJoining);
+
+                const hashedPassword = await this._bcrypt.Encrypt(password);
+                const userDataToPersist = toEmployeePersistance({name: employeeName, email, password: hashedPassword})
+                await this._employeeRepository.create(userDataToPersist);
+
+                const employees = await this._fetchAndEnrich(query);
+                return employees ?? null;
             };
         
             return null;
@@ -82,35 +71,17 @@ export class EmployeeManagement {
         }
     }
 
-    async blockEmployee(employeeId: string, query: SearchFilterSortParams): Promise<{ employee: EmployeeAccessDTO[]; total: number } | null> {
+    async blockEmployee(employeeId: string, query: SearchFilterSortParams): Promise<EmployeeUseCaseResponse | null> {
         try {
-            const employeeDocs = await this.employeeRepository.findById(employeeId);
+            const employee = await this._employeeRepository.findById(employeeId);
 
-            if(employeeDocs === null) return null;
-            const employeeEntity = toEntity(employeeDocs);
-
-            if(employeeEntity === null) return null;
-            const employee = toDTO(employeeEntity);
-            
             if (employee) {
                 const status: boolean = !employee.isBlocked;
-
-                const result = await this.employeeRepository.blockById(employeeId, status);
+                const result = await this._employeeRepository.blockById(employeeId, status);
                 if (!result) return null;
 
-                const queryResult = await paramToQueryEmployee(query)
-                const employees = await this.employeeRepository.findAll(
-                    queryResult.query,
-                    queryResult.sort,
-                    queryResult.skip,
-                    queryResult.limit
-                );
-                const employeeEntity = toEntities(employees);
-                if(employeeEntity === null) return null;
-
-                const employeeData = toDTOs(employeeEntity);
-                const employeeCount = await this.employeeRepository.countDocs(queryResult.query);
-                return  employeeData ? { employee: employeeData.employee, total: employeeCount } : null;
+                const employees = await this._fetchAndEnrich(query)
+                return employees ?? null;
             }
 
             return null;
@@ -121,11 +92,11 @@ export class EmployeeManagement {
 
     async dashboardData(filterConstraints: Filter): Promise<EmployeeStats[] | null> {
         try {
-           const result = await this.employeeRepository.dashboardData(filterConstraints);
+           const result = await this._employeeRepository.dashboardData(filterConstraints);
            if(!result){return null};
            return result;
         } catch (error) {
            throw new Error('something happend in dashboardData') 
-        }
+        };
     };
 };

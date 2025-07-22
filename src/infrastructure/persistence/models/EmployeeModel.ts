@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import { EmployeeDocument } from "../interfaces/IEmployeeModel";
+import { IEmployeeDocument } from "../interfaces/IEmployeeModel";
 
 const EmployeeSchema: Schema = new Schema({
     name: {type: String},
@@ -10,4 +10,4 @@ const EmployeeSchema: Schema = new Schema({
     timestamps: true
 });
 
-export const EmployeeModel = mongoose.model<EmployeeDocument>('Employee', EmployeeSchema);
+export const EmployeeModel = mongoose.model<IEmployeeDocument>('Employee', EmployeeSchema);

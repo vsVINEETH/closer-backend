@@ -1,9 +1,12 @@
-import { WalletDTO } from "../../usecases/dtos/WalletDTO";
-import { IWallet } from "../../infrastructure/persistence/interfaces/IWalletModel";
+import { WalletTransaction } from "../../usecases/dtos/WalletDTO";
+import { Wallet } from "../entities/Wallet";
+import { WalletPersistanceType } from "../../infrastructure/types/WalletType";
+
 export interface IWalletRepository {
-    create(userId: string): Promise<void>;
-    findById(userId: string): Promise<IWallet | null>;
-    findOne(userId: string): Promise<IWallet | null>
-    addMoney(userId: string, transaction: WalletDTO ): Promise<IWallet | null>;
-    debitMoney(userId: string, transaction: WalletDTO ): Promise<IWallet | null>;
-}
+    create(walletData: WalletPersistanceType): Promise<Wallet>;
+    findTransactionById(userId: string): Promise<Wallet | null>;
+    findOne(userId: string): Promise<Wallet | null>
+    // addMoney(userId: string, transaction: WalletTransaction ): Promise<Wallet | null>;
+    // debitMoney(userId: string, transaction: WalletTransaction ): Promise<Wallet | null>;
+    updateTransaction( userId: string, transaction: WalletTransaction ): Promise<Wallet | null>;
+};

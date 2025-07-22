@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import { IEmployeeRepository } from "../../domain/repositories/IEmployeeRepository";
-import { IUserRepository } from "../../domain/repositories/IUserRepository";
 import { UserRepository } from "../../infrastructure/repositories/UserRepository";
 import { EmployeeRepository } from "../../infrastructure/repositories/EmployeeRepositoy";
+import { HttpStatus } from "../constants/HttpStatus";
+import { ResponseMessages } from "../constants/ResponseMessages";
+
 const userRepository = new UserRepository()
 const employeeRepository = new EmployeeRepository()
 
@@ -13,15 +14,15 @@ export const auth = (): RequestHandler =>{
          if(currentUser?.role === 'user'){
             const user = await userRepository.findById(currentUser.userId);
             if(user?.isBlocked || user?.isBanned){
-                 res.status(401).json({message:"Entry has been restricted"});
-                 return
+                 res.status(HttpStatus.UNAUTHORIZED).json({message:ResponseMessages.ENTRY_RESTRICTED});
+                 return;
             };
          };
 
          if(currentUser?.role =='employee'){
             const employee = await employeeRepository.findById(currentUser.userId)
             if(employee?.isBlocked){
-               res.status(401).json({message:'You are is blocked'})
+               res.status(HttpStatus.UNAUTHORIZED).json({message:ResponseMessages.ENTRY_RESTRICTED});
                return 
             };
          };

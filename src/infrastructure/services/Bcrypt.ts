@@ -6,9 +6,9 @@ export class Bcrypt implements IBcrypt {
 
     async Encrypt(data: string): Promise<string> {
         return await bcrypt.hash(data, this.salteRounds);
-    }
+    };
 
     async compare(plainTextPassword: string, hashedPassword: string): Promise<boolean> {
         return bcrypt.compare(plainTextPassword, hashedPassword)
-    }
-}
+    };
+};

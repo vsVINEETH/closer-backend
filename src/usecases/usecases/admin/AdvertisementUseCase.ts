@@ -3,238 +3,126 @@ import { AdvertisementDTO } from "../../dtos/AdvertisementDTO";
 import { SearchFilterSortParams } from "../../dtos/CommonDTO";
 import { paramToQueryAdvertisement } from "../../../interfaces/utils/paramToQuery";
 import { IS3Client } from "../../interfaces/IS3Client";
-import { toEntities, toDTOs, toEntity, toDTO, toPersistance, toUpdate } from "../../mappers/AdvertisementMappter";
+import { toAdvertisementPersistance, toAdvertisementUpdate } from "../../../infrastructure/mappers/advertisementDataMapper";
+import { AdvertisementUseCaseResponse } from "../../types/AdvertisementTypes";
+import { IAdvertisementUseCase } from "../../interfaces/admin/IAdvertisementUseCase";
+import { toAdvertisementDTO, toAdvertisementDTOs } from "../../../interfaces/mappers/advertisementDTOMapper";
 
-export class AdvertisementManagement {
+export class AdvertisementManagement implements IAdvertisementUseCase{
     constructor(
-        private advertisementRepository: IAdvertisementRepository,
-        private s3: IS3Client
+        private _advertisementRepository: IAdvertisementRepository,
+        private _s3: IS3Client
     ) { };
 
-
-    async fetchData(query: SearchFilterSortParams ): Promise<{advertisement: AdvertisementDTO[], total: number } | null> {
+    private async _fetchAndEnrich(query: SearchFilterSortParams): Promise<AdvertisementUseCaseResponse> {
         try {
-            let advertisementData;
-            let total; 
-            if(query){
-                const queryResult = await paramToQueryAdvertisement(query);
-                total = await this.advertisementRepository.countDocs(queryResult.query);
-                advertisementData = await this.advertisementRepository.findAll(
-                    queryResult.query, 
-                    queryResult.sort, 
-                    queryResult.skip, 
-                    queryResult.limit
-                );
 
-            } else {
-              advertisementData = await this.advertisementRepository.findAll();
-              total = await this.advertisementRepository.countDocs({});
-            };
+            const queryResult = await paramToQueryAdvertisement(query);
+            const total = await this._advertisementRepository.countDocs(queryResult.query);
+            const advertisements = await this._advertisementRepository.findAll(
+                queryResult.query,
+                queryResult.sort,
+                queryResult.skip,
+                queryResult.limit
+            );
 
-            if(advertisementData === null) return null;
-            const advertisements = toEntities(advertisementData);
-
-            if(advertisements === null) return null;
-            const advertisementDTO = toDTOs(advertisements);
-
-            if (advertisementDTO?.advertisements) {
+            if (advertisements) {
                 await Promise.all(
-                    advertisementDTO.advertisements.map(async (doc) => {
-                        doc.image = await Promise.all(
-                            doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
-                        );
-                    })
+                advertisements.map(async (doc) => {
+                    doc.image = await Promise.all(
+                    doc.image.map(async (val) => await this._s3.retrieveFromS3(val as string))
+                    );
+                })
                 );
             };
-        
-            return advertisementData ? {advertisement: advertisementDTO.advertisements, total} : null;
+            return { advertisement: toAdvertisementDTOs(advertisements)  ?? [], total: total ?? 0 };  
+        } catch (error) {
+            throw new Error('Something happend fetchAndEnrich')
+        };
+    };
+
+    async fetchData(query: SearchFilterSortParams ): Promise< AdvertisementUseCaseResponse | null> {
+        try {
+            const  advertisement = await this._fetchAndEnrich(query);
+            return advertisement ?? null;
         } catch (error) {
             throw new Error("something happend in fetchData");
         };
     };
 
-    async createAdvertisement(advertisementData: AdvertisementDTO, query: SearchFilterSortParams, imageFiles:  Express.MulterS3.File[]): Promise<{advertisement: AdvertisementDTO[], total: number } | null>{
+    async createAdvertisement(advertisementData: AdvertisementDTO, query: SearchFilterSortParams, imageFiles: Express.Multer.File[]): Promise<AdvertisementUseCaseResponse | null>{
         try {
             const image: string[] = [];
               for(let post of imageFiles){
-                 const fileName = await this.s3.uploadToS3(post);
+                 const fileName = await this._s3.uploadToS3(post);
                  image.push(fileName);
               };
 
-            let total; 
-            const dataToPersist = toPersistance({...advertisementData, image});
-            const result = await this.advertisementRepository.create(dataToPersist);
-        
+            const dataToPersist = toAdvertisementPersistance({...advertisementData, image});
+            const result = await this._advertisementRepository.create(dataToPersist);
+
             if (result) {
-                const queryResult = await paramToQueryAdvertisement(query)
-                total = await this.advertisementRepository.countDocs(queryResult.query);
-                const advertisements = await this.advertisementRepository.findAll(
-                    queryResult.query,
-                    queryResult.sort,
-                    queryResult.skip,
-                    queryResult.limit
-                );
+                const advertisements = await this._fetchAndEnrich(query);
+                return advertisements ?? null;
+            };
 
-                if(advertisements === null) return null;
-                const advertisementEntity = toEntities(advertisements);
-
-                if(advertisementEntity === null) return null;
-                const advertisementDTO = toDTOs(advertisementEntity);
-
-                if (advertisementDTO?.advertisements) {
-                    await Promise.all(
-                        advertisementDTO.advertisements.map(async (doc) => {
-                            doc.image = await Promise.all(
-                                doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
-                            );
-                        })
-                    );
-                };
-
-                return {advertisement: advertisementDTO?.advertisements ?? [], total: total ?? 0}
-            }
             return null;
         } catch (error) {
             throw new Error("something happend in createAdvertisement");
-        }
-    }
+        };
+    };
 
-    async updateAdvertisement(updatedAdvertisementData: AdvertisementDTO, query: SearchFilterSortParams): Promise<{advertisement: AdvertisementDTO[], total: number }| null> {
+    async updateAdvertisement(updatedAdvertisementData: AdvertisementDTO, query: SearchFilterSortParams): Promise<AdvertisementUseCaseResponse| null> {
         try {
 
-            const advertisementData = toUpdate(updatedAdvertisementData);
-            const result = await this.advertisementRepository.update(updatedAdvertisementData.id, advertisementData);
-            let total;
+            const advertisementData = toAdvertisementUpdate(updatedAdvertisementData);
+            const result = await this._advertisementRepository.update(updatedAdvertisementData.id, advertisementData);
+
             if (result) {
-                const queryResult = await paramToQueryAdvertisement(query);
-                 total = await this.advertisementRepository.countDocs(queryResult.query);
-                const advertisements = await this.advertisementRepository.findAll(
-                    queryResult.query,
-                    queryResult.sort,
-                    queryResult.skip,
-                    queryResult.limit
-                );
-
-                if(advertisements === null) return null;
-                const advertisementEntity = toEntities(advertisements);
-
-                if(advertisementEntity === null) return null;
-                const advertisementDTO = toDTOs(advertisementEntity);
-
-                if (advertisementDTO?.advertisements) {
-                    await Promise.all(
-                        advertisementDTO.advertisements.map(async (doc) => {
-                            doc.image = await Promise.all(
-                                doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
-                            );
-                        })
-                    );
-                };
-
-                return { advertisement: advertisementDTO?.advertisements ?? [], total: total ?? 0 };
+                const advertisements = await this._fetchAndEnrich(query);
+                return advertisements ?? null;
             };
             return null;
         } catch (error) {
             throw new Error("something happend in updateAdvertisement");
-        }
-    }
+        };
+    };
 
-    async handleListing(advertisementId: string, query: SearchFilterSortParams): Promise<{advertisement: AdvertisementDTO[], total: number } | null> {
+    async handleListing(advertisementId: string, query: SearchFilterSortParams): Promise<AdvertisementUseCaseResponse| null> {
         try {
-            const adDocs = await this.advertisementRepository.findById(advertisementId);
-            
-            if(adDocs === null) return null;
-            const advertisementEntity = toEntity(adDocs);
-           
-            if(advertisementEntity === null) return null;
-            const advertisement = toDTO(advertisementEntity)
 
+            const advertisement = await this._advertisementRepository.findById(advertisementId);
             if (advertisement) {
                 const status: boolean = !advertisement.isListed;
-                const result = await this.advertisementRepository.listById(advertisementId, status);
-                let total;
+                const result = await this._advertisementRepository.listById(advertisementId, status);
+
                 if (result) {
-                    const queryResult = await paramToQueryAdvertisement(query);
-                    total = await this.advertisementRepository.countDocs(queryResult.query);
-                    const advertisements = await this.advertisementRepository.findAll(
-                        queryResult.query,
-                        queryResult.sort,
-                        queryResult.skip,
-                        queryResult.limit
-                    );
-
-
-                    if(advertisements === null) return null;
-                    const advertisementEntity = toEntities(advertisements);
-
-                    if(advertisementEntity === null) return null;
-                    const advertisementDTO = toDTOs(advertisementEntity);
-
-                    if (advertisementDTO?.advertisements) {
-                        await Promise.all(
-                            advertisementDTO.advertisements.map(async (doc) => {
-                                doc.image = await Promise.all(
-                                    doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
-                                );
-                            })
-                        );
-                    };
-                    return { advertisement: advertisementDTO?.advertisements ?? [], total: total ?? 0 };
-                }
-                return null;
-            }
+                    const advertisements = await this._fetchAndEnrich(query);
+                    return advertisements ?? null;
+                };
+            };
 
             return null;
         } catch (error) {
             throw new Error("something happend in handleListing");
-        }
-    }
+        };
+    };
 
-    async deleteAdvertisement(advertisementId: string, query: SearchFilterSortParams): Promise<{advertisement: AdvertisementDTO[], total: number } | null> {
+    async deleteAdvertisement(advertisementId: string, query: SearchFilterSortParams): Promise<AdvertisementUseCaseResponse | null> {
         try {
-            const adDocs = await this.advertisementRepository.findById(advertisementId)
+            const advertisement = await this._advertisementRepository.findById(advertisementId);
 
-            if(adDocs === null) return null;
-            const advertisementEntity = toEntity(adDocs);
-           
-            if(advertisementEntity === null) return null;
-            const advertisement = toDTO(advertisementEntity)
-           
             if (advertisement) {
                 await Promise.all(
-                    advertisement.image.map(async (val) => await this.s3.deleteFromS3(val as string))
+                    advertisement.image.map(async (val) => await this._s3.deleteFromS3(val as string))
                 );
                 advertisement.image = [];
             };
 
-            const content = await this.advertisementRepository.deleteById(advertisementId);
-            let total;
+            const content = await this._advertisementRepository.deleteById(advertisementId);
             if (content) {
-                const queryResult = await paramToQueryAdvertisement(query);
-                total = await this.advertisementRepository.countDocs(queryResult.query);
-                const advertisements = await this.advertisementRepository.findAll(
-                    queryResult.query,
-                    queryResult.sort,
-                    queryResult.skip,
-                    queryResult.limit
-                );
-
-                if(advertisements === null) return null;
-                const advertisementEntity = toEntities(advertisements);
-
-                if(advertisementEntity === null) return null;
-                const advertisementDTO = toDTOs(advertisementEntity);
-
-                if (advertisementDTO?.advertisements) {
-                    await Promise.all(
-                        advertisementDTO.advertisements.map(async (doc) => {
-                            doc.image = await Promise.all(
-                                doc.image.map(async (val) => await this.s3.retrieveFromS3(val as string))
-                            );
-                        })
-                    );
-                };
-                return { advertisement: advertisementDTO?.advertisements ?? [], total: total ?? 0 };
+                const advertisements = await this._fetchAndEnrich(query);
+                return advertisements ?? null;
             };
             return null;
         } catch (error) {
@@ -242,4 +130,4 @@ export class AdvertisementManagement {
         }
     };
 
-}
+};

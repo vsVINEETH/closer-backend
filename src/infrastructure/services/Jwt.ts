@@ -1,7 +1,7 @@
-import jwt, {JwtPayload} from "jsonwebtoken"; 
+import jwt, {JwtPayload, JsonWebTokenError, TokenExpiredError} from "jsonwebtoken"; 
 import { IToken } from "../../usecases/interfaces/IToken";
 
-export {JwtPayload};
+export {JwtPayload, JsonWebTokenError, TokenExpiredError};
 export class Token implements IToken {
     private readonly jwt_key: string = process.env.JWT_SECRET || " ";
     private readonly refresh_key: string = process.env.JWT_REFRESH_TOKEN || " ";

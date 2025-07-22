@@ -1,5 +1,5 @@
 import mongoose, {Schema } from "mongoose";
-import { ITransaction, IWallet } from "../interfaces/IWalletModel";
+import { ITransaction, IWalletDocument } from "../interfaces/IWalletModel";
 
 
 const TransactionSchema = new Schema<ITransaction>(
@@ -16,7 +16,7 @@ const TransactionSchema = new Schema<ITransaction>(
 );
 
 
-const WalletSchema = new Schema<IWallet>(
+const WalletSchema = new Schema<IWalletDocument>(
   {
     userId: { type: String, required: true, unique: true },
     balance: { type: Number, default: 0 },
@@ -25,5 +25,5 @@ const WalletSchema = new Schema<IWallet>(
   { timestamps: true } 
 );
 
-const WalletModel = mongoose.model<IWallet>("Wallet", WalletSchema);
+const WalletModel = mongoose.model<IWalletDocument>("Wallet", WalletSchema);
 export default WalletModel;

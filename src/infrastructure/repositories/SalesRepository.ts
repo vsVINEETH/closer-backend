@@ -1,25 +1,19 @@
 import { Sales } from "../../domain/entities/Sales";
-import { SalesDTO, RawSubscriptionData, EventSalesData, TotalMonthlySalesData, EventSales, SalesReport, SubscriptionSale, SubscriptionSaleIterate, DailySale, DailySaleIterate, EventSaleIterate } from "../../usecases/dtos/SalesDTO";
+import { EventSales, SalesReportRaw } from "../../usecases/dtos/SalesDTO";
 import { SalesModel } from "../persistence/models/SalesModel";
 import { ISalesRepository } from "../../domain/repositories/ISalesRepository";
-import { Event } from "../../domain/entities/Event";
+import { BaseRepository } from "./BaseRepository";
+import { ISalesDocument } from "../persistence/interfaces/ISalesModel";
+import { toSalesEnitiyFromDoc, toSalesEntitiesFromDocs } from "../mappers/salesDataMapper";
 
+export class SalesRepository extends BaseRepository<Sales, ISalesDocument> implements ISalesRepository {
 
-export class SalesRepository implements ISalesRepository {
-
-    async create(transactionDetails: Sales): Promise<void> {
-        try {
-            const sale = new SalesModel(transactionDetails);
-            await sale.save();
-        } catch (error) {
-           throw new Error('something happend in create');
-        }
+    constructor(){
+        super(SalesModel, toSalesEnitiyFromDoc, toSalesEntitiesFromDocs)
     };
 
-    async dashboardData(): Promise<SalesReport | null> {
+    async dashboardData(currentYear: number): Promise<SalesReportRaw | null> {
         try {
-            const currentYear = new Date().getFullYear();
-    
             const result = await SalesModel.aggregate([
                 {
                     $match: {
@@ -51,7 +45,6 @@ export class SalesRepository implements ISalesRepository {
                             },
                             { $sort: { "_id.month": 1 } },
                         ],
-    
                         
                         eventSales: [
                             { $match: { saleType: "event" } },
@@ -63,7 +56,7 @@ export class SalesRepository implements ISalesRepository {
                                     avgSalesPerMonth: { $avg: "$billedAmount" },
                                     dailySales: {
                                         $push: {
-                                            createdAt: "$createdAt", // Store full date
+                                            createdAt: "$createdAt",
                                             billedAmount: "$billedAmount",
                                             bookedSlots: "$bookedSlots",
                                         },
@@ -86,57 +79,18 @@ export class SalesRepository implements ISalesRepository {
                 },
             ]);
     
-            // return  result[0] as SalesReport;
-            const monthNames = [
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-            ];
-    
-            const formattedResult = {
-                subscriptionSales: result[0].subscriptionSales.map((item: SubscriptionSaleIterate) => ({
-                    month: monthNames[item._id.month - 1], // Convert month number to name
-                    planType: item._id.planType,
-                    count: item.count,
-                    amount: item.amount,
-                    dailySales: item.dailySales.map((daySale: DailySale) => ({
-                        date: new Date(daySale.createdAt).toISOString(), // Store as ISO date string
-                        amount: daySale.billedAmount,
-                        count: 1,
-                    })),
-                })),
-                eventSales: result[0].eventSales.map((item: EventSaleIterate) => ({
-                    month: monthNames[item._id.month - 1],
-                    totalSales: item.totalSales,
-                    soldSlots: item.soldSlots,
-                    avgSalesPerMonth: item.avgSalesPerMonth,
-                    dailySales: item.dailySales.map((daySale: DailySaleIterate) => ({
-                        date: new Date(daySale.createdAt).toISOString(),
-                        amount: daySale.billedAmount,
-                        count: daySale.bookedSlots,
-                    })),
-                })),
-                totalMonthlySales: result[0].totalMonthlySales.map((item: TotalMonthlySalesData) => ({
-                    month: monthNames[item._id.month - 1],
-                    totalIncome: item.totalIncome,
-                })),
-            };
-
-            console.log(formattedResult,'result')
-            return formattedResult;
+            return  result[0];
         } catch (error) {
-            console.error("Error fetching dashboard data:", error);
             throw new Error("Something happened in dashboardData.");
-        }
+        };
     };
 
     async findBookedEventsByUserId(userId: string): Promise<EventSales[]> {
         try {
             const result = await SalesModel.find({ userId, saleType: "event" }).populate("eventId");
-            
             return result as unknown as EventSales[];
         } catch (error) {
-            throw new Error("something happend in findBookedEventsByUserId")
-        }
+            throw new Error("something happend in findBookedEventsByUserId");
+        };
     };
-    
 };

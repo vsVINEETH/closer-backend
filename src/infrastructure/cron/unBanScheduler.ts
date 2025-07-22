@@ -13,4 +13,4 @@ cron.schedule('* * * * *', async () => {
     } catch (error) {
       console.error('Error in unban scheduler:', error);
     }
-  });
+});

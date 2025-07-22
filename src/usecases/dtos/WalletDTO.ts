@@ -6,6 +6,11 @@ export interface ITransaction {
     updatedAt: Date;
   }
 
+  export type PaymentOrderDTO = {
+    amount: number, 
+    currency: string
+  }
+
   export interface Transaction  {
     amount: number;
     description: string;
@@ -13,6 +18,13 @@ export interface ITransaction {
     createdAt: string;
     updatedAt: string;
   }
+  
+  export interface WalletTransaction  {
+    amount: number;
+    description: string;
+    paymentType: string; 
+  }
+
 
 export interface WalletDTO {
     id:string,
@@ -22,7 +34,7 @@ export interface WalletDTO {
     createdAt: Date;
   }
 
-  export type RazorpayWalletPaymentData = {
+  export type RazorpayWalletPaymentDTO = {
     razorpay_order_id: string;
     razorpay_payment_id: string;
     razorpay_signature: string;

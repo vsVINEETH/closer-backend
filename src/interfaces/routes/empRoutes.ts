@@ -13,7 +13,7 @@ import { uploads } from '../middlewares/multer';
 
 const router = express.Router();
 const EMPLOYEE:string = 'employee';
-const USER: string = 'user'
+const USER: string = 'user';
 
 //AUTH
 // router.post('/login', auth(), employeeAuthController.login);

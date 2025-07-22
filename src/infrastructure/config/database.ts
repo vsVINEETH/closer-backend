@@ -8,6 +8,5 @@ export const connectDatabase = async () => {
         initializeSubscriptionPlans().catch(console.error)
     } catch (error) {
         console.error("MongoDB connection error:", error);
-    }
-    
+    };
 };

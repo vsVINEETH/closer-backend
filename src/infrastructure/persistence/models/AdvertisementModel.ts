@@ -1,5 +1,5 @@
 import  mongoose,{ Schema } from "mongoose";
-import { AdvertisementDocument } from "../interfaces/IAdvertisement";
+import { IAdvertisementDocument } from "../interfaces/IAdvertisement";
 
 const AdvertisementSchema: Schema = new Schema ({
     title:{type: String},
@@ -11,4 +11,4 @@ const AdvertisementSchema: Schema = new Schema ({
     timestamps: true
 });
 
-export const AdvertisementModel = mongoose.model<AdvertisementDocument>('advertisement', AdvertisementSchema)
+export const AdvertisementModel = mongoose.model<IAdvertisementDocument>('advertisement', AdvertisementSchema)

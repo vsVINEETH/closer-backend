@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import { UserDocument } from "../interfaces/IUserModel";
+import { IUserDocument } from "../interfaces/IUserModel";
 
 const UserSchema: Schema = new Schema ({
     username: {type: String,},
@@ -44,4 +44,4 @@ const UserSchema: Schema = new Schema ({
 
 
 UserSchema.index({ 'location.coordinates': '2dsphere' });
-export const UserModel = mongoose.model<UserDocument>('user', UserSchema)
+export const UserModel = mongoose.model<IUserDocument>('user', UserSchema)

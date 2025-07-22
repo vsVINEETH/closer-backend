@@ -9,5 +9,4 @@ export const s3 = new S3Client ({
         accessKeyId: process.env.AWS_S3_KEY as string,
         secretAccessKey: process.env.AWS_S3_SECRET as string
     },
-
 });

@@ -1,41 +1,21 @@
 import { Request, Response, NextFunction } from "express";
-
 import { HttpStatus } from "../../../domain/enums/httpStatus";
 import { ResponseMessages } from "../../../usecases/constants/commonMessages";
-
-//useCase's
-import { EventManagement } from "../../../usecases/usecases/admin/EventUseCase";
-import { SalesManagement } from "../../../usecases/usecases/SalesUseCase";
-
-//repositories
-import { EventRepository } from "../../../infrastructure/repositories/EventRepository";
-import { UserRepository } from "../../../infrastructure/repositories/UserRepository";
-import { SalesRepository } from "../../../infrastructure/repositories/SalesRepository";
-
-//external services
-import { RazorpayService } from "../../../infrastructure/services/Razorpay";
-import { Mailer } from "../../../infrastructure/services/Mailer";
-import { S3ClientAccessControll } from "../../../infrastructure/services/S3Client";
+import { eventUseCase } from "../../../di/general.di";
+import { salesUseCases } from "../../../di/admin.di";
 
 export class UserEventController {
-    private eventUseCase: EventManagement;
-    private salesUseCase: SalesManagement;
 
-    constructor(){
-        const mailer = new Mailer();
-        const razorpay = new RazorpayService();
-        const userRepository = new UserRepository();
-        const eventRepository = new EventRepository();
-        const salesRepository = new SalesRepository();
-        const s3ClientAccessControll = new S3ClientAccessControll()
-        this.eventUseCase = new EventManagement(eventRepository, mailer, userRepository,razorpay,salesRepository,s3ClientAccessControll);
-        this.salesUseCase = new SalesManagement(salesRepository, s3ClientAccessControll);
-    };
+    constructor(
+      private _eventUseCase = eventUseCase,
+      private _salesUseCase = salesUseCases,
+      
+    ){}
 
     fetchEvent = async (req: Request, res: Response, next: NextFunction) => {
       try {
          const eventId = req.query.id;
-         const result = await this.eventUseCase.fetchEvent(eventId as string)
+         const result = await this._eventUseCase.fetchEvent(eventId as string)
          if(result){
           res.status(HttpStatus.OK).json(result);
           return
@@ -50,8 +30,8 @@ export class UserEventController {
     fetchBookedEvents = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const {userId} = req.query;
-            const output = await this.eventUseCase.bookedEvents(userId as string);
-            const result = await this.salesUseCase.getBookedEvents(userId as string);
+            const output = await this._eventUseCase.bookedEvents(userId as string);
+            const result = await this._salesUseCase.getBookedEvents(userId as string);
             if(result){
                 res.status(HttpStatus.OK).json(result);
                 return;
@@ -60,13 +40,13 @@ export class UserEventController {
             return;
         } catch (error) {
         next(error)
-        }
+        };
     };
 
 
     bookOder = async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const order = await this.eventUseCase.createOrder(req.body);
+        const order = await this._eventUseCase.createOrder(req.body);
         if(order){
           res.status(HttpStatus.ACCEPTED).json(order)
           return
@@ -77,15 +57,15 @@ export class UserEventController {
         res.status(HttpStatus.NOT_ACCEPTABLE).json({message: ResponseMessages.FAILED_TO_CREATE_ORDER});
         return
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
 
     verifyBookPayment = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const paymentData = req.body;
-        const result = await this.eventUseCase.verifyPayment(paymentData);
+        const result = await this._eventUseCase.verifyPayment(paymentData);
         if(result){
           res.status(HttpStatus.OK).json(result);
           return;
@@ -93,15 +73,15 @@ export class UserEventController {
         res.status(HttpStatus.BAD_REQUEST).json({message: ResponseMessages.INVALID_PAYMENT_SIGNATURE});
         return
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 
 
     abortBookPayment = async (req: Request, res: Response, next: NextFunction) => {
       try {
         const {userId} = req.body;
-        const result = await this.eventUseCase.abortPayment(userId);
+        const result = await this._eventUseCase.abortPayment(userId);
         if(result){
           res.status(HttpStatus.ACCEPTED).json({message: ResponseMessages.PAYMENT_ABORTED});
           return;
@@ -109,8 +89,8 @@ export class UserEventController {
         res.status(HttpStatus.BAD_REQUEST).json({Message: ResponseMessages.FALIED_TO_ABORT_PAYMENT});
         return;
       } catch (error) {
-        next(error)
-      }
+        next(error);
+      };
     };
 };
 

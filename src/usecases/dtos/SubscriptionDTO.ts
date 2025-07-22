@@ -14,7 +14,25 @@ export interface Prime {
   billedAmount: number;
 }
 
+export type SubscriptionUseCaseResponse = {
+  subscription: SubscriptionDTO[],
+   total: number
+};
 
+
+export type PaymentOrderDTO = {
+  amount: number, 
+  currency: string, 
+  userId: string, 
+  isPrime: boolean
+};
+
+export type PaymentDTO = {
+  userId: string, 
+  planType: string, 
+  amount: number, 
+  planId: string
+}
 
 export type RazorpaySubscriptionPaymentData = {
     razorpay_order_id: string;

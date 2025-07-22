@@ -1,10 +1,19 @@
 import { IWalletRepository } from "../../domain/repositories/IWalletRepository";
 import WalletModel from "../persistence/models/WalletModel";
-import { WalletDTO } from "../../usecases/dtos/WalletDTO";
-import { IWallet } from "../persistence/interfaces/IWalletModel";
-export class WalletRepository implements IWalletRepository {
+import { WalletTransaction } from "../../usecases/dtos/WalletDTO";
+import { Wallet } from "../../domain/entities/Wallet";
+import { toWalletEntitiesFromDocs, toWalletEntityFromDoc } from "../mappers/walletDataMapper";
+import { WalletPersistanceType } from "../types/WalletType";
+import { BaseRepository } from "./BaseRepository";
+import { IWalletDocument } from "../persistence/interfaces/IWalletModel";
 
-  async findById(userId: string): Promise<IWallet | null> {
+export class WalletRepository extends BaseRepository<Wallet, IWalletDocument> implements IWalletRepository {
+
+  constructor(){
+    super(WalletModel, toWalletEntityFromDoc, toWalletEntitiesFromDocs)
+  };
+
+  async findTransactionById(userId: string): Promise<Wallet | null> {
     try {
       const wallet = await WalletModel.aggregate([
         { $match: { userId } },
@@ -14,64 +23,43 @@ export class WalletRepository implements IWalletRepository {
           },
         },
       ]);
-      return wallet[0] ?? null;
+      return wallet.length ? toWalletEntityFromDoc(wallet[0]): null;
     } catch (error) {
       throw new Error("Something happened in findById");
-    }
+    };
   };
 
-  async findOne(userId: string): Promise<IWallet | null> {
+  async findOne(userId: string): Promise<Wallet | null> {
     try {
       const wallet = await WalletModel.findOne({userId: userId});
-      return wallet;
+      return wallet ? toWalletEntityFromDoc(wallet): null;
     } catch (error) {
       throw new Error("Something happened in findById");
-    }
-  }
-  
-  async create(userId: string): Promise< void> {
-    try {
-      const wallet = new WalletModel({
-        userId,
-        balance: 0,
-        transactions: [],
-      });
-      await wallet.save();
-      return
-    } catch (error) {
-      throw new Error("something happend in create");
-    }
+    };
   };
 
-  async addMoney( userId: string, transaction: WalletDTO): Promise<IWallet | null> {
+  async updateTransaction( userId: string, transaction: WalletTransaction ): Promise<Wallet | null> {
     try {
-       
         const wallet = await WalletModel.findOneAndUpdate(
-          { userId },           
-          { $set: transaction },     
-          { new: true }              
+          { userId },
+          {
+            $inc: { balance: transaction.amount },
+            $push: {
+              transactions: {
+                amount: transaction.amount,
+                description: transaction.description,
+                paymentType: transaction.paymentType,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }
+            }
+          },
+          { new: true }          
         );
-      return wallet;
+      return wallet ? toWalletEntityFromDoc(wallet): null;
     } catch (error) {
       throw new Error("something happend in addMoney");
-    }
+    };
   };
 
-  async debitMoney(
-    userId: string,
-    transaction: WalletDTO
-  ): Promise<IWallet | null> {
-    try {
-
-      const wallet = await WalletModel.findOneAndUpdate(
-          { userId },           
-          { $set: transaction },     
-          { new: true }              
-        );
-      return wallet;
-      
-    } catch (error) {
-      throw new Error("something happend in debitMoney");
-    }
-  }
 };

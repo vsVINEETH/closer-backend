@@ -1,12 +1,11 @@
 import { Chat } from "../entities/Chat";
-import { ChatDTO, ChatMessage, CallLogType, UserDetails,Messages, MatchedUserMessage } from "../../usecases/dtos/ChatDTO";
-import { User } from "../entities/User";
+import {ChatMessage, CallLogType, UserDetails,Messages, MatchDTO} from "../../usecases/dtos/ChatDTO";
 export interface IChatRepository {
-    create(chatMessage: ChatMessage): Promise<string | null>;
+    create(chatMessage: Chat): Promise<Chat>;
     findChats(senderId: string, receiverId: string): Promise<Chat[] | null>  
     createCallLog(callLog: CallLogType): Promise<void>
     updateStatus(messageStatus: string, isRead: boolean, chatId: string): Promise<void>
     updateUnreadedMessage(senderId: string, receiverId: string): Promise<void>
     updateDeliverMessage(messageStatus: string, receiverId: string): Promise<void>
-    findMessages(userId: string, matches: UserDetails): Promise<Messages[] | null>
+    findMessages(userId: string, matches: MatchDTO[]): Promise<Messages[] | null>
 };

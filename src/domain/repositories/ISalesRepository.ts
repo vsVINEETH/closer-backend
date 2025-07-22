@@ -1,8 +1,7 @@
 import { Sales } from "../entities/Sales";
-import { EventSales, SalesDTO, SalesReport } from "../../usecases/dtos/SalesDTO";
-import { Filter } from "../../../types/express";
+import { EventSales, SalesReportRaw } from "../../usecases/dtos/SalesDTO";
 export interface ISalesRepository {
-    create(transactionDetails: Sales): Promise<void>;
-    dashboardData(filterConstraints: Filter): Promise<SalesReport | null>;
+    create(transactionDetails: Sales): Promise<Sales>;
+    dashboardData(currentYear: number): Promise<SalesReportRaw | null>;
     findBookedEventsByUserId(userId: string): Promise<EventSales[]>
-}
+};

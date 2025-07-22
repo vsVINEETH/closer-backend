@@ -1,57 +1,35 @@
 import { Notification } from "../../domain/entities/Notification";
-import { NotificationDTO } from "../../usecases/dtos/NotificationDTO";
 import { NotificationModel } from "../persistence/models/NotificationModel";
 import { INotificationRepository } from "../../domain/repositories/INotificationRepository";
+import { toNotificationEntitiesFromDocs, toNotificationEntityFromDoc } from "../mappers/notificationDataMapper";
+import { BaseRepository } from "./BaseRepository";
+import { INotificationDocument } from "../persistence/interfaces/INotificationModel";
 
-export class NotificationRepository implements INotificationRepository {
-  async create(notificationData: NotificationDTO): Promise<void> {
+export class NotificationRepository extends BaseRepository<Notification, INotificationDocument> implements INotificationRepository {
+
+  constructor(){
+    super(NotificationModel, toNotificationEntityFromDoc, toNotificationEntitiesFromDocs)
+  };
+
+  async findOne(userId: string): Promise<Notification | null> {
     try {
-      const result = await NotificationModel.findOne({ user: notificationData.user });
-      if (!result) {
-        await NotificationModel.insertMany([
-          {
-            user: notificationData.user,
-            interactor: notificationData.interactor,
-            type: notificationData.type,
-            message: notificationData.message,
-          },
-        ]);
-      }
+      const notificationDoc = await NotificationModel.findOne({ interactor: userId});
+      return notificationDoc ? toNotificationEntityFromDoc(notificationDoc): null;
     } catch (error) {
-      throw new Error("something happend in create");
-    }
-  }
+      throw new Error('Something happend in findOne');
+    };
+  };
 
-  async findAll(userId: string): Promise<NotificationDTO[] | null> {
+
+  async findAllByUserId(userId: string): Promise<Notification[] | null> {
     try {
-      const result = await NotificationModel.find({ user: userId }).sort({
+      const notificationDocs = await NotificationModel.find({ user: userId }).sort({
         createdAt: -1,
       });
-
-      return result
-        ? result.map(
-            (data) =>
-              new Notification(
-                data._id as string,
-                data.user.toString(),
-                data.interactor.toString(),
-                data.type,
-                data.message,
-                data.createdAt.toLocaleDateString()
-              )
-          )
-        : null;
+      return notificationDocs ? toNotificationEntitiesFromDocs(notificationDocs): null;
     } catch (error) {
       throw new Error("something happend in findAll");
-    }
-  }
+    };
+  };
 
-  async findByIdDelete(notificationId: string): Promise<boolean> {
-    try {
-      const result = await NotificationModel.findByIdAndDelete(notificationId);
-      return result !== null;
-    } catch (error) {
-      throw new Error("something happend in findByIdDelete");
-    }
-  }
-}
+};

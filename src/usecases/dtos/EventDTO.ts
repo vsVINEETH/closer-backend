@@ -3,6 +3,13 @@ export type UpcomingEventCount = {
   upcomingEvents: number ;
 }[]
 
+export type OrderDTO = {
+  amount: number, 
+  currency: string, 
+  userId: string, 
+  eventId: string, 
+  slots: number
+}
 
 export interface RazorpayEventPayment {
   razorpay_order_id: string;
@@ -32,6 +39,20 @@ export interface EventBaseType{
     eventDate: string,
     slots?:number,
     price?:number,
+}
+
+export type EventListingDTO = {
+  
+      id: string,
+      title: string,
+      description: string,
+      image: string[],
+      location: string,
+      locationURL: string,
+      eventDate: string,
+      slots?: number,
+      price?: number,
+      createdAt?: string
 }
 
 export interface EventDTO {

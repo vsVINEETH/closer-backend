@@ -10,7 +10,7 @@ export interface ITransaction {
 
   
 // Interface for Wallet Model
-export interface IWallet extends Document {
+export interface IWalletDocument extends Document {
     userId: string;
     balance: number;
     transactions: ITransaction[];

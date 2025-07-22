@@ -30,9 +30,6 @@ export interface TotalMonthlySalesData {
     totalIncome: number;
 }
 
-
-
-
 export type EventSales = {
   _id: string;
   userId: string;
@@ -40,7 +37,7 @@ export type EventSales = {
     _id: string;
     title: string;
     description: string;
-    image: string[]; // Assuming images are stored as an array of URLs
+    image: string[]; 
     location: string;
     locationURL: string;
     eventDate: Date;
@@ -48,7 +45,7 @@ export type EventSales = {
     totalEntries: number;
     price: number;
     totalSales: number;
-    buyers: string[]; // Assuming buyers are stored as an array of ObjectId references
+    buyers: string[]; 
     createdAt: Date;
     updatedAt: Date;
     __v: number;
@@ -81,10 +78,24 @@ export type DailySale = {
     billedAmount: number;
     billedSlots: number
   };
+
+ export type DailySaleIterate = {
+    createdAt: string; // Assuming it's a date string (ISO format)
+    billedAmount: number;
+    bookedSlots?: number; // Only applicable for event sales
+  };
   
   export type SubscriptionSale = {
     month: string;
     planType: "monthly" | "weekly" | "yearly"; // Extendable for other plans
+    count: number;
+    amount: number;
+    dailySales: DailySale[];
+  };
+
+    
+  export type SubscriptionSaleIterate = {
+    _id: { month: number; planType: "monthly" | "weekly" | "yearly" }; // Adjustable for more plans
     count: number;
     amount: number;
     dailySales: DailySale[];
@@ -102,6 +113,12 @@ export type DailySale = {
     month: string;
     totalIncome: number;
   };
+
+  export type SalesReportRaw = {
+    subscriptionSales: SubscriptionSaleIterate[];
+    eventSales: EventSaleIterate[];
+    totalMonthlySales: TotalMonthlySalesData[];
+  };
   
  export type SalesReport = {
     subscriptionSales: SubscriptionSale[];
@@ -118,19 +135,6 @@ export type DailySale = {
   
   
 
-
-  export type DailySaleIterate = {
-    createdAt: string; // Assuming it's a date string (ISO format)
-    billedAmount: number;
-    bookedSlots?: number; // Only applicable for event sales
-  };
-  
-  export type SubscriptionSaleIterate = {
-    _id: { month: number; planType: "monthly" | "weekly" | "yearly" }; // Adjustable for more plans
-    count: number;
-    amount: number;
-    dailySales: DailySale[];
-  };
   
   export type EventSaleIterate = {
     _id: { month: number };

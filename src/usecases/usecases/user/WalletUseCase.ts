@@ -1,137 +1,78 @@
 import { IWalletRepository } from "../../../domain/repositories/IWalletRepository";
-import { WalletDTO, RazorpayWalletPaymentData } from "../../dtos/WalletDTO";
+import { toTransaction, toWalletPersistance } from "../../../infrastructure/mappers/walletDataMapper";
+import { toWalletDTO } from "../../../interfaces/mappers/walletDTOMapper";
+import { WalletDTO, PaymentOrderDTO, RazorpayWalletPaymentDTO } from "../../dtos/WalletDTO";
 import { IRazorpay } from "../../interfaces/IRazorpay";
-import { toDTO, toEntity } from "../../mappers/WalletMapper";
+import { IUserWalletUseCase } from "../../interfaces/user/IWalletUseCase";
 
-export class WalletManagement {
+export class WalletManagement implements IUserWalletUseCase {
     constructor(
-        private walletRepository: IWalletRepository,
-        private razorpay: IRazorpay
+        private _walletRepository: IWalletRepository,
+        private _razorpay: IRazorpay
     ) { }
-
-     async transactionCreator(userId: string, amount: number,description: string, paymentType: string ): Promise<WalletDTO | null>{
-        const wallet = await this.walletRepository.findOne(userId);
-
-        if(!wallet) return null;
-        const walletEntity = toEntity(wallet);
-
-        if(!walletEntity) return null;
-        const walletData = toDTO(walletEntity);
-
-        if(paymentType === 'credit'){
-            const convertedAmount = amount / 100;
-
-            walletData.balance += convertedAmount;
-
-            const transaction = {
-                amount: convertedAmount,
-                description,
-                paymentType: 'credit',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
-
-            walletData.transactions.push(transaction);
-        } else if (paymentType === 'debit'){
-            walletData.balance -= amount;
-
-            const transaction = {
-                amount,
-                description,
-                paymentType: 'debit',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
-
-            walletData.transactions.push(transaction);
-        }
-
-        return walletData;
-    }
-
 
     async fetchData(userId: string): Promise<WalletDTO | null > {
         try {
-            const data = await this.walletRepository.findById(userId);
-
-            if (data === null) {
-               await this.walletRepository.create(userId)
-            }else{
-                const walletEntity = toEntity(data);
-                 if(walletEntity === null) return null;
-                 const walletData = toDTO(walletEntity);
-                 return walletData;
+            const walletData = await this._walletRepository.findTransactionById(userId);
+            if (!walletData) {
+               await this._walletRepository.create(toWalletPersistance(userId));
+            } else {
+                return walletData ? toWalletDTO(walletData) : null;
             };
-
             return null;
         } catch (error) {
             throw new Error('something happend in fetchData')
-        }
+        };
     };
 
-    async createOrder(paymentOrderData: {amount: number, currency: string}): Promise<boolean | null> {
+    async createOrder(paymentOrderData: PaymentOrderDTO): Promise<boolean | null> {
         try {
             const { amount, currency } = paymentOrderData;
-            return await this.razorpay.createOrder(amount, currency);
+            return await this._razorpay.createOrder(amount, currency);
         } catch (error) {
             throw new Error('something happend in createOrder')
-        }
+        };
+    };
 
-    }
-
-    async verifyPayment(razorpayWalletPaymentData: RazorpayWalletPaymentData): Promise<WalletDTO | null> {
+    async verifyPayment(razorpayWalletPaymentData: RazorpayWalletPaymentDTO): Promise<WalletDTO | null> {
         try {
             const { razorpay_order_id, razorpay_payment_id, 
                    razorpay_signature, userId, amount, description 
                   } = razorpayWalletPaymentData;
 
-            const isValid = await this.razorpay.verifyPayment({
+            const isValid = await this._razorpay.verifyPayment({
                 orderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
                 signature: razorpay_signature,
             });
-            if (!isValid) { return null }
-            const walletData = await this.transactionCreator(userId,amount,description, 'credit');
-       
-            if(walletData === null) return null;
-            
-            const result = await this.walletRepository.addMoney(userId, walletData);
-            if (!result) { return null }
-            
-            const walletEntity = toEntity(result);
-            if(walletEntity === null) return null;
-            const wallet = toDTO(walletEntity);
-            return wallet;
+
+            if (!isValid) return null;
+
+            let convertedAmount = amount / 100;
+            const walletData = toTransaction({amount: convertedAmount, description, paymentType:'credit'})
+            const wallet = await this._walletRepository.updateTransaction(userId, walletData);
+            return wallet ? toWalletDTO(wallet) : null;
 
         } catch (error) {
             throw new Error('something happend in verifyPayment')
-        }
-
-    }
+        };
+    };
 
     async payWithWallet(userId: string, amount: number , description: string): Promise<WalletDTO | null> {
         try {
-            const walletData = await this.walletRepository.findById(userId);
+            
+            const walletData = await this._walletRepository.findTransactionById(userId);
             if (!walletData) { return null }
+           
             if (walletData?.balance < amount) {
                 return null
             } else {
-                const walletData = await this.transactionCreator(userId,amount,description, 'debit');
-
-                if(walletData === null) return null;
-                const walletLatestData = await this.walletRepository.debitMoney(userId, walletData);
-
-                if(walletLatestData === null) return null;
-                const walletEntity = toEntity(walletLatestData);
-
-                if(walletEntity === null) return null;
-                const wallet = toDTO(walletEntity);
-                return wallet;
-            }
+                const walletData = toTransaction({amount: -amount, description, paymentType:'debit'});
+                const wallet = await this._walletRepository.updateTransaction(userId, walletData);
+                return wallet ? toWalletDTO(wallet): null;
+            };
         } catch (error) {
-            throw new Error('something happend in payWithWallet')
-        }
-    }
-
-    
-}
+            throw new Error('something happend in payWithWallet');
+        };
+    };
+};

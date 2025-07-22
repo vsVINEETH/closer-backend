@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import { SalesDocument } from "../interfaces/ISalesModel";
+import { ISalesDocument } from "../interfaces/ISalesModel";
 
 
 const SalesSchema: Schema = new Schema(
@@ -15,4 +15,4 @@ const SalesSchema: Schema = new Schema(
       { timestamps: true }
 );
 
-export const SalesModel = mongoose.model<SalesDocument>('sales', SalesSchema);
+export const SalesModel = mongoose.model<ISalesDocument>('sales', SalesSchema);

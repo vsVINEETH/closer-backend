@@ -1,6 +1,6 @@
 import mongoose, {Document} from "mongoose";
 
-export interface INotification extends Document {
+export interface INotificationDocument extends Document {
     user: mongoose.Types.ObjectId;
     interactor: mongoose.Types.ObjectId;
     type: 'interest' | 'match';

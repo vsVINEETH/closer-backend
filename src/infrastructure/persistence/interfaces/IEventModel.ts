@@ -1,6 +1,6 @@
 import { Document } from "mongoose";
 
-export interface EventDocument extends Document {
+export interface IEventDocument extends Document {
      title: string,
      description: string,
      image: string[],

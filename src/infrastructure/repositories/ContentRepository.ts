@@ -1,112 +1,40 @@
 import { IContentRepository } from "../../domain/repositories/IContentRepository";
 import { Content } from "../../domain/entities/Content";
 import { ContentModel } from "../persistence/models/ContentModel";
-import { ContentDTO, DashboardData } from "../../usecases/dtos/ContentDTO";
+import { PopularCategory, TrendingContent } from "../../usecases/dtos/ContentDTO";
 import { SortOrder } from "../config/database";
-import { Filter } from "../../../types/express";
 import { UpdateQuery } from "mongoose";
 
-export class ContentRepository implements IContentRepository {
-   async findAll<T>(
+import { toContentEnitiesFromDocs, toContentEnityFromDoc } from "../mappers/contentDataMapper";
+import { ContentPersistanceType, ContentUpdateType } from "../types/ContentType";
+import { FilterMatchType, SharesUpdateOptions, VoteUpdateOptions } from "../../usecases/types/ContentTypes";
+import { TotalContent, MostLiked, MostShared, RecentContent } from "../../usecases/dtos/ContentDTO";
+import { BaseRepository } from "./BaseRepository";
+import { IContentDocument } from "../persistence/interfaces/IContentModel";
+
+export class ContentRepository extends BaseRepository<Content, IContentDocument> implements IContentRepository {
+  constructor(){
+    super(ContentModel, toContentEnityFromDoc, toContentEnitiesFromDocs)
+  }
+   
+  async findAllAndPopulate<T>(
       query: Record<string, T> = {},
       sort: { [key: string]: SortOrder } = {},
       skip: number = 0,
       limit: number = 0
-    ): Promise<{ contents: Content[]; total: number } | null> {
+    ): Promise< Content[] | null> {
     try {
-      const contentDoc = await ContentModel.find(query)
+      const contentDocs = await ContentModel.find(query)
       .sort(sort)
       .skip(skip)
       .limit(limit)
       .populate("category").exec();
 
-      if (!contentDoc) {
-        return null;
-      }
-
-      const contents = contentDoc.map(
-        (content) =>
-          new Content(
-            content.id,
-            content.title,
-            content.subtitle,
-            content.content,
-            content.image,
-            content.isListed,
-            new Date(content.createdAt).toLocaleDateString(),
-            content.category,
-            [],
-            [],
-            []
-          )
-      );
-      const total = await ContentModel.countDocuments(query)
-      return {contents: contents, total: total};
+      return contentDocs ? toContentEnitiesFromDocs(contentDocs) : null;
     } catch (error) {
       throw new Error("something happend in findAll");
-    }
-  }
-
-  async findById(contentId: string): Promise<ContentDTO | null> {
-    try {
-      const content = await ContentModel.findById(contentId);
-
-      return content
-        ? {
-            id: content.id,
-            title: content.title,
-            subtitle: content.subtitle,
-            content: content.content,
-            image: content.image,
-            isListed: content.isListed,
-            createdAt: content.createdAt,
-            upvotes: content.upvotes,
-            downvotes: content.downvotes,
-            shares: content.shares
-          }
-        : null;
-    } catch (error) {
-      throw new Error("something happend in findById");
-    }
-  }
-
-  async create(contentData: ContentDTO): Promise<boolean> {
-    try {
-      const newContent = new ContentModel({
-        title: contentData.title,
-        subtitle: contentData.subtitle,
-        content: contentData.content,
-        image: contentData.image,
-        isListed: true,
-        category: contentData.category,
-      });
-
-      await newContent.save();
-      return true;
-    } catch (error) {
-      throw new Error("something happend in create");
-    }
-  }
-
-  async update(updatedContedData: ContentDTO): Promise<boolean> {
-    try {
-      const content = await ContentModel.findByIdAndUpdate(
-        updatedContedData.id,
-        {
-          title: updatedContedData.title,
-          subtitle: updatedContedData.subtitle,
-          content: updatedContedData.content,
-          // image: updatedContedData.image,
-          isListed: updatedContedData.isListed,
-          category: updatedContedData.category,
-        },
-        { new: true }
-      );
-      return content !== null;
-    } catch (error) {
-      throw new Error("something happend in update");
-    }
-  }
+    };
+  };
 
   async listById(contentId: string, status: boolean): Promise<boolean | null> {
     try {
@@ -122,45 +50,15 @@ export class ContentRepository implements IContentRepository {
     } catch (error) {
       throw new Error("something happend in listById");
     }
-  }
+  };
 
-  async deleteById(contentId: string): Promise<boolean | null> {
-    try {
-      const content = await ContentModel.findByIdAndDelete(contentId, { new: true });
-
-      return content !== null;
-    } catch (error) {
-      throw new Error("something happend in deleteById");
-    }
-  }
-
-  async voteById(userId: string, blogId: string, voteType: string = 'upvote'): Promise<boolean | null> {
+  async voteById(blogId: string, options: VoteUpdateOptions): Promise<boolean | null> {
     try {
 
       const updateQuery: UpdateQuery<{ upvotes?: string[]; downvotes?: string[] }> = {};
-  
-      if (voteType === 'upvote') {
-        updateQuery.$addToSet = { upvotes: userId };
-        updateQuery.$pull = { downvotes: userId };
 
-      } else if (voteType === 'downvote') {
-        updateQuery.$addToSet = { downvotes: userId };
-        updateQuery.$pull = { upvotes: userId };
-      } else {
-        throw new Error('Invalid vote type');
-      }
-
-      const check = await ContentModel.findById(blogId);
-      if(check){
-        if(voteType === 'upvote' && check.upvotes.includes(userId)){
-          delete updateQuery.$addToSet
-          updateQuery.$pull = { upvotes: userId };
-        } else if(voteType === 'downvote' && check.downvotes.includes(userId)){
-          delete updateQuery.$addToSet
-          updateQuery.$pull = { downvotes: userId };
-        }
-
-      };
+      if (options.addToSet) updateQuery.$addToSet = options.addToSet;
+      if (options.pull) updateQuery.$pull = options.pull;
 
       const content  = await ContentModel.findByIdAndUpdate(
         blogId,
@@ -171,19 +69,15 @@ export class ContentRepository implements IContentRepository {
       return content !== null;
     } catch (error) {
       throw new Error('Something happened in voteById');
-    }
-  }
+    };
+  };
 
-  async shareById(userId: string, blogId: string): Promise< boolean | null> {
+  async shareById(blogId: string, options: SharesUpdateOptions): Promise< boolean | null> {
     try {
 
-      const updateQuery: Partial<{ $addToSet: { shares: string } }> = {};
-
-      const check = await ContentModel.findById(blogId);
-      
-      if(!check?.shares.includes(userId)){
-        updateQuery.$addToSet = {shares: userId}
-      }
+      const updateQuery: UpdateQuery<{ shares?: string[] }> = {};
+     
+      if(options.addToSet) updateQuery.$addToSet = options.addToSet;
 
       const content = await ContentModel.findByIdAndUpdate(
         blogId,
@@ -195,42 +89,21 @@ export class ContentRepository implements IContentRepository {
     } catch (error) {
       throw new Error('Something happend in shareById')
     }
-  }
+  };
 
-  async getAggregatedData(filterConstraints: Filter): Promise< DashboardData |null> {
+  async getTotalContent(filterConstraints: FilterMatchType): Promise< TotalContent[] |null> {
     try {
-      const startOfYear = new Date(new Date('2024').getFullYear(), 0, 1); // January 1st of the current year
-      const startDate = filterConstraints.startDate ? new Date(filterConstraints.startDate) : startOfYear;
-      const endDate = filterConstraints.endDate ? new Date(filterConstraints.endDate) : new Date();
-  
-      const dateThreshold = new Date();
-      dateThreshold.setDate(dateThreshold.getDate() - 7);
+      const contents = await ContentModel.find(filterConstraints);
+      return contents ? toContentEnitiesFromDocs(contents) : null;
+    } catch (error) {
+      throw new Error('Something happend in getTotalContent') 
+    };
+  };
 
-      type FilterMatchType = {
-        createdAt?: { $gte: Date; $lte: Date };
-        status?: string;
-        category?: string;
-      };
-      
-      const filterMatch: FilterMatchType = {};
-      
-      if (startDate && endDate) {
-        filterMatch.createdAt = { $gte: startDate, $lte: endDate };
-      }
-      
-      const [
-        totalContent,
-        mostLiked,
-        mostShared,
-        recentContent,
-        trendingContents,
-        popularCategory
-      ] = await Promise.all([
-  
-        ContentModel.find(filterMatch),
-  
-        ContentModel.aggregate([
-          { $match: filterMatch },
+  async getMostLikedContents(filterConstraints: FilterMatchType): Promise< MostLiked[] |null> {
+    try {
+     const contents = await  ContentModel.aggregate([
+          { $match: filterConstraints },
           {
             $project: {
               title: 1,
@@ -243,10 +116,19 @@ export class ContentRepository implements IContentRepository {
           },
           { $sort: { upvotesCount: -1 } },
           { $limit: 10 },
-        ]),
-  
-        ContentModel.aggregate([
-          { $match: filterMatch },
+        ]);
+
+        return contents ? contents : null;      
+    } catch (error) {
+      throw new Error('Something happend in getTotalContent') 
+    };
+  };
+
+  async getMostSharedContent(filterConstraints: FilterMatchType): Promise< MostShared[] |null>{
+    try {
+        
+     const contents = await ContentModel.aggregate([
+          { $match: filterConstraints },
           {
             $project: {
               title: 1,
@@ -259,19 +141,34 @@ export class ContentRepository implements IContentRepository {
           },
           { $sort: { sharesCount: -1 } },
           { $limit: 10 },
-        ]),
-  
-        ContentModel.aggregate([
-          { $match: filterMatch },
+        ]);
+
+        return contents ? contents : null;
+    } catch (error) {
+      throw new Error('Something happend in getMostSharedContent') 
+    }
+  };
+
+  async getRecentContent(filterConstraints: FilterMatchType): Promise< RecentContent[]|null>{
+    try {
+      const contents = await ContentModel.aggregate([
+          { $match: filterConstraints },
           { $sort: { createdAt: -1 } },
           { $limit: 10 },
-        ]),
-  
-        ContentModel.aggregate([
+        ]);
+      return contents ? contents : null;
+    } catch (error) {
+      throw new Error('Something happend in getRecentContent') 
+    };
+  };
+
+  async getTrendingContents(filterConstraints: FilterMatchType, dateThreshold: Date, endDate: Date): Promise< TrendingContent[] |null>{
+    try {
+      const contents = await ContentModel.aggregate([
           {
             $match: {
               createdAt: { $gte: dateThreshold, $lte: endDate },
-              ...filterMatch,
+              ...filterConstraints,
             },
           },
           {
@@ -292,13 +189,20 @@ export class ContentRepository implements IContentRepository {
           },
           { $sort: { interactionsCount: -1 } },
           { $limit: 10 },
-        ]),
-  
-        ContentModel.aggregate([
+        ]);
+        return contents ? contents : null;
+    } catch (error) {
+      throw new Error('Something happend in getTrendingContents') 
+    };
+  };
+
+  async getPopularCategory(filterConstraints: FilterMatchType, dateThreshold: Date, endDate: Date): Promise< PopularCategory[] |null>{
+    try {
+      const contents = await ContentModel.aggregate([
           {
             $match: {
               createdAt: { $gte: dateThreshold, $lte: endDate },
-              ...filterMatch,
+              ...filterConstraints,
             },
           },
           {
@@ -330,20 +234,11 @@ export class ContentRepository implements IContentRepository {
           },
           { $sort: { totalInteractions: -1 } },
           { $limit: 1 },
-        ]),
-      ]);
-  
-      return {
-        totalContent  ,
-        mostLiked,
-        mostShared,
-        recentContent,
-        trendingContents,
-        popularCategory,
-      } as unknown as DashboardData;
+        ]);
+     
+        return contents ? contents : null;
     } catch (error) {
-      throw new Error("Something happened in getAggregatedData: ");
+      throw new Error('Something happend in getPopularCategory') 
     }
-  }
-  
-}
+  };
+};

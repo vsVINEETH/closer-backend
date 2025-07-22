@@ -2,7 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
 import { tokenAuth } from '../middlewares/tokenAuth';
-import { upload } from '../middlewares/multerS3';
 import { uploads } from '../middlewares/multer';
 import { adminAuthController } from '../controllers/adminControllers/AuthController';
 import { employeeManagementController } from '../controllers/adminControllers/EmployeeManagementController';
@@ -15,7 +14,7 @@ import { dashboardController } from '../controllers/adminControllers/DashboardCo
 const router = express.Router();
 
 const ADMIN:string = 'admin';
-const USER:string = 'user'
+const USER:string = 'user';
 
 router.post('/login', adminAuthController.login);
 router.delete('/logout', tokenAuth([ADMIN]), adminAuthController.logout);

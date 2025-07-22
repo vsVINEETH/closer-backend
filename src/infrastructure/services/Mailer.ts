@@ -16,7 +16,7 @@ export class Mailer implements IMailer {
             },
         });
 
-        let response = await transporter.sendMail({
+        await transporter.sendMail({
             from: process.env.SMTP_ID,
             to:`${to}`,
             subject: `${subject}`,

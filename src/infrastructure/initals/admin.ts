@@ -9,8 +9,8 @@ export async function insertAdminData() {
         console.log("Admin data inserted:", newAdmin);
     } catch (error) {
         console.error("Error inserting admin data:", error);
-    }
-}
+    };
+};
 
 
 

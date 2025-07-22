@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import { SubscriptionDocument } from "../interfaces/ISubscription";
+import { ISubscriptionDocument } from "../interfaces/ISubscription";
 
 const subscriptionSchema: Schema = new Schema({
     planType: {
@@ -17,7 +17,7 @@ const subscriptionSchema: Schema = new Schema({
       }
 }, { timestamps: true });
 
-export const SubscriptionModel = mongoose.model<SubscriptionDocument>('Subscription', subscriptionSchema);
+export const SubscriptionModel = mongoose.model<ISubscriptionDocument>('Subscription', subscriptionSchema);
 
 export const initializeSubscriptionPlans = async () => {
     const plans = [

@@ -34,7 +34,7 @@ export interface Messages {
           callType: string,
           callDuration: number,
           isMissed: boolean,
-          isRead:boolean,
+          isRead?:boolean,
   }
 
   export type MatchedUserMessage = {
@@ -65,6 +65,13 @@ export interface Messages {
   }
   
   export interface Match {
+    _id: string;
+    username: string;
+    email: string;
+    image: string[];
+  }
+
+    export interface MatchDTO {
     _id: string;
     username: string;
     email: string;

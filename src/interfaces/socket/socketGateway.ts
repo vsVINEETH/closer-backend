@@ -1,26 +1,10 @@
 import { Server, Socket } from "socket.io";
-import { NotifyUser } from "../../usecases/usecases/user/NotifyUserUseCase";
 import { Notification } from "../../domain/entities/Notification";
-import { NotificationRepository } from "../../infrastructure/repositories/NotificationRepository";
-import { UserRepository } from "../../infrastructure/repositories/UserRepository";
-import { CommonOperations } from "../../usecases/usecases/user/CommonUseCase";
-import { ChatManagement } from "../../usecases/usecases/user/ChatUseCase";
-import { ChatRepository } from "../../infrastructure/repositories/ChatRepository";
 import { UserDTO } from "../../usecases/dtos/UserDTO";
-import { Geolocation } from "../../infrastructure/services/Geolocation";
-
 import { MissedCall, OngoingCall, Participants } from "../../../types/express";
-import { S3ClientAccessControll } from "../../infrastructure/services/S3Client";
-const userRepository = new UserRepository();
-const s3ClientAccessControll = new S3ClientAccessControll()
-const geolocation = new Geolocation()
-const commonUseCase = new CommonOperations(userRepository, s3ClientAccessControll, geolocation);
-
-const notificationRepository = new NotificationRepository();
-const notifyUserUseCase = new NotifyUser(notificationRepository);
-
-const chatRepository = new ChatRepository();
-const chatUseCase = new ChatManagement(chatRepository);
+import { commonUserUseCase } from "../../di/user.di";
+import { notificationUseCases } from "../../di/user.di";
+import { chatUserUseCase } from "../../di/user.di";
 
 type User = {
   userId: string;
@@ -81,15 +65,15 @@ export class SocketGateway {
       socket.on("notification", async (data) => {
         const { user, interactor, type, message, image } = data; // `user` is the opposite user's ID
         try {
-          const notification = new Notification(
-            "",
-            user,
-            interactor,
-            type,
-            message
-          );
-          await notifyUserUseCase.execute(notification);
-          await commonUseCase.interestedUsers(user, interactor);
+          const notification = new Notification({
+            id:'',
+            user: user,
+            interactor: interactor,
+            type: type,
+            message: message
+          });
+          await notificationUseCases.execute(notification);
+          await commonUserUseCase.interestedUsers(user, interactor);
 
           // Find the opposite user's socket ID and notify them
           const oppositeSocketId = this.userSocketMap.get(user);
@@ -110,7 +94,7 @@ export class SocketGateway {
       socket.on("sendMessage", async (data) => {
         const { sender, receiver, message } = data;
         try {
-          const newMessageId = await chatUseCase.saveChat(data);
+          const newMessageId = await chatUserUseCase.saveChat(data);
           const receiverSocketId = this.userSocketMap.get(receiver._id);
           const senderSocketId = this.userSocketMap.get(sender);
 
@@ -119,7 +103,7 @@ export class SocketGateway {
               .to(receiverSocketId)
               .emit("receiveMessage", { ...data, status: 'delivered', _id: newMessageId });
                
-               await chatUseCase.updateChatStatus('delivered', false, newMessageId ?? '' );
+               await chatUserUseCase.updateChatStatus('delivered', false, newMessageId ?? '' );
         
             if (senderSocketId) {
               this.io
@@ -144,7 +128,7 @@ export class SocketGateway {
       socket.on("readMessage", async (data) => {
         try {
           console.log(data)
-          await chatUseCase.updateUnreadChats(data.sender, data.receiver);
+          await chatUserUseCase.updateUnreadChats(data.sender, data.receiver);
           const senderSocketId = this.userSocketMap.get(data.sender);
           if (senderSocketId) {
             
@@ -167,7 +151,7 @@ export class SocketGateway {
         try {
           const user = this.userSocketMap.get(userId);
           if(user){
-            await chatUseCase.updateDeliverMessage('delivered', userId)
+            await chatUserUseCase.updateDeliverMessage('delivered', userId)
           }
           
         } catch (error) {
@@ -252,7 +236,6 @@ export class SocketGateway {
 
       //end call
       socket.on("hangup", async (data) => {
-        console.log(data,'lop')
         let socketIdToEmitTo;
         if (
           data?.ongoingCall?.participants?.caller?.userId === data.userHangingupId
@@ -280,7 +263,7 @@ export class SocketGateway {
             caller = ongoingCall.caller
             receiver = ongoingCall.receiver
           };
-          await chatUseCase.saveCallLog({
+          await chatUserUseCase.saveCallLog({
             sender: caller,
             receiver: receiver,
             type: ongoingCall.type,
