@@ -93,7 +93,7 @@ export function toUserProfileDTO(entity: User): UserProfileDTO {
         id: entity.id,
         username: entity.username,
         email: entity.email,
-        phone: entity.email,
+        phone: entity.phone,
         dob:entity.dob,
         gender:entity.gender,
         interestedIn: entity.interestedIn,

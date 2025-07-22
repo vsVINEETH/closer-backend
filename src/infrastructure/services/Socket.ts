@@ -6,7 +6,7 @@ dotenv.config();
 export const setupSocket = (server: any): Server => {
     const io = new Server(server, {
         cors: {
-            origin: `${process.env.CLIENT_BASE_URL_DEV}`,
+            origin: `${process.env.CLIENT_BASE_URL}`,
             methods:["GET","POST"],
             credentials: true,
         },
